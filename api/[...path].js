@@ -20,8 +20,10 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   res.setHeader('X-Content-Type-Options', 'nosniff');
 
-  const route = req.query.path || [];
-  const path = Array.isArray(route) ? route.join('/') : route;
+  const path = new URL(req.url, 'http://localhost')
+    .pathname
+    .replace(/^\/api\/?/, '')
+    .replace(/\/+$/, '');
   const fail = (status, message) =>
     res.status(status).json({error: message});
 
