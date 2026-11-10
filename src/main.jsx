@@ -61,6 +61,43 @@ function Art({type = 'rings'}) {
   );
 }
 
+function ProjectCover({project}) {
+  const [failed, setFailed] = useState(false);
+
+  const websiteUrl = safeUrl(project.url);
+
+  // ถ้าแอดมินกำหนดภาพปกเอง จะใช้ภาพนั้นก่อน
+  const imageUrl = project.cover
+    ? safeUrl(project.cover)
+    : websiteUrl
+      ? `https://s.wordpress.com/mshots/v1/${encodeURIComponent(websiteUrl)}?w=1280`
+      : '';
+
+  useEffect(() => {
+    setFailed(false);
+  }, [imageUrl]);
+
+  if (!imageUrl || failed) {
+    return <Art type={project.art}/>;
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={`ภาพหน้าแรกของ ${project.title}`}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      style={{
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+        objectPosition: 'top'
+      }}
+    />
+  );
+}
+
 function App() {
   const [data, setData] = useState(initial);
   const [shortcut, setShortcut] = useState('');
@@ -276,9 +313,7 @@ function App() {
                   onClick={event => openDetail(project, event.currentTarget)}
                 >
                   <div className="project-image">
-                    {project.cover ? (
-                      <img src={safeUrl(project.cover)} alt={project.title}/>
-                    ) : <Art type={project.art}/>}
+                    <ProjectCover project={project}/>
                     <span className="arrow">↗</span>
                   </div>
                   <div className="project-caption">
@@ -381,9 +416,7 @@ function App() {
             >×</button>
 
             <div className="detail-art">
-              {selected.cover ? (
-                <img src={safeUrl(selected.cover)} alt=""/>
-              ) : <Art type={selected.art}/>}
+              <ProjectCover project={selected}/>
             </div>
 
             <small>{selected.category} / {selected.year}</small>
