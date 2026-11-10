@@ -237,3 +237,40 @@ footer{flex-wrap:wrap}
 html{scroll-behavior:auto}
 *{animation:none!important;transition:none!important}
 }
+/* จำกัดความกว้างและลดความสูงของแกลเลอรี */
+#work .gallery {
+  max-width: 1040px;
+  margin-inline: auto;
+  align-items: start;
+}
+
+#work .gallery.mosaic .project-image {
+  height: 200px;
+}
+
+#work .gallery.mosaic .p0 .project-image {
+  height: 480px;
+}
+
+/* จัดภาพปกให้เห็นด้านบนของรูป */
+#work .project-image img {
+  object-fit: cover;
+  object-position: top center;
+}
+
+@media (max-width: 900px) {
+  #work .gallery.mosaic .project-image {
+    height: 180px;
+  }
+
+  #work .gallery.mosaic .p0 .project-image {
+    height: 440px;
+  }
+}
+
+@media (max-width: 600px) {
+  #work .gallery.mosaic .project-image,
+  #work .gallery.mosaic .p0 .project-image {
+    height: 240px;
+  }
+}

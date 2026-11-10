@@ -107,6 +107,40 @@ function App() {
 
     api('event', {kind: 'visit', visitor}).catch(() => {});
   }, []);
+  
+  useEffect(() => {
+    if (!auth) return;
+  
+    let requestId = 0;
+  
+    const unsubscribe = auth.onAuthStateChanged(async currentUser => {
+      const currentRequest = ++requestId;
+    
+      setBubble(false);
+    
+      if (!currentUser) return;
+    
+      try {
+        const token = await currentUser.getIdToken();
+      
+        // ตรวจสิทธิ์ผู้ดูแลกับเซิร์ฟเวอร์ก่อนแสดง bubble
+        await api('admin', null, token);
+      
+        if (currentRequest === requestId) {
+          setBubble(true);
+        }
+      } catch {
+        if (currentRequest === requestId) {
+          setBubble(false);
+        }
+      }
+    });
+  
+    return () => {
+      requestId++;
+      unsubscribe();
+    };
+  }, []);
 
   function track(project, kind) {
     if (configured) {
