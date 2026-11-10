@@ -1,6 +1,7 @@
 import {initializeApp, getApps, cert} from 'firebase-admin/app';
 import {getFirestore, FieldValue} from 'firebase-admin/firestore';
 import {getAuth} from 'firebase-admin/auth';
+import { createHash } from 'node:crypto';
 import {hashCode, checkCode, fingerprint, validate} from '../lib/core.js';
 
 function database() {
@@ -104,6 +105,42 @@ export default async function handler(req, res) {
         });
 
         return true;
+      });
+    }
+
+    if (path === 'upload-signature' && req.method === 'POST') {
+      // อนุญาตเฉพาะบัญชีผู้ดูแล
+      await admin();
+
+      if (!(await limit('upload', 20, 60000))) {
+        return fail(429, 'อัปโหลดบ่อยเกินไป กรุณารอสักครู่');
+      }
+
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+      if (!cloudName || !apiKey || !apiSecret) {
+        return fail(503, 'ยังไม่ได้ตั้งค่า Cloudinary ใน Vercel');
+      }
+
+      const timestamp = Math.floor(Date.now() / 1000);
+      const folder = 'portfolio-covers';
+      const allowedFormats = 'jpg,png,webp';
+
+      const signature = createHash('sha1')
+        .update(
+          `allowed_formats=${allowedFormats}&folder=${folder}&timestamp=${timestamp}${apiSecret}`
+        )
+        .digest('hex');
+
+      return res.json({
+        cloudName,
+        apiKey,
+        timestamp,
+        folder,
+        allowedFormats,
+        signature
       });
     }
 

@@ -542,22 +542,31 @@ function Admin({data, configured, onClose}) {
   }
 
   async function save() {
-    setBusy(true);
+  setBusy(true);
+  setMessage('');
 
-    try {
-      const token = await auth.currentUser.getIdToken();
-      await api('save', {
-        content: draft,
-        shortcut: hotkey,
-        code: code || undefined
-      }, token);
+  try {
+    const token = await auth.currentUser.getIdToken();
 
-      location.replace('/');
-    } catch (error) {
-      setMessage(error.message);
-      setBusy(false);
+    const payload = {
+      content: draft,
+      shortcut: hotkey
+    };
+
+    // ส่งรหัสใหม่เฉพาะเมื่อกรอกช่องนี้
+    // ถ้าเว้นว่าง เซิร์ฟเวอร์จะเก็บรหัสเดิมไว้
+    if (code.length > 0) {
+      payload.code = code;
     }
+
+    await api('save', payload, token);
+
+    location.replace('/');
+  } catch (error) {
+    setMessage(error.message);
+    setBusy(false);
   }
+}
 
   function updateProject(index, key, value) {
     setDraft(previous => ({
@@ -601,7 +610,83 @@ function Admin({data, configured, onClose}) {
     appearance: 'เนื้อหาและการแสดงผล',
     security: 'การเข้าถึงแอดมิน'
   };
-
+  
+  async function uploadCover(index, file) {
+    if (!file) return;
+  
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setMessage('รองรับ JPG, PNG และ WebP เท่านั้น');
+      return;
+    }
+  
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage('รูปต้องมีขนาดไม่เกิน 5 MB');
+      return;
+    }
+  
+    if (!auth?.currentUser) {
+      setMessage('กรุณาเข้าสู่ระบบก่อนอัปโหลด');
+      return;
+    }
+  
+    const projectId = draft.projects[index].id;
+  
+    setBusy(true);
+    setMessage('กำลังอัปโหลดรูป…');
+  
+    try {
+      const token = await auth.currentUser.getIdToken();
+    
+      const permission = await api(
+        'upload-signature',
+        {},
+        token
+      );
+    
+      const form = new FormData();
+    
+      form.append('file', file);
+      form.append('api_key', permission.apiKey);
+      form.append('timestamp', String(permission.timestamp));
+      form.append('folder', permission.folder);
+      form.append('allowed_formats', permission.allowedFormats);
+      form.append('signature', permission.signature);
+    
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${permission.cloudName}/image/upload`,
+        {
+          method: 'POST',
+          body: form
+        }
+      );
+    
+      const result = await response.json();
+    
+      if (!response.ok || !result.secure_url) {
+        throw Error(
+          result.error?.message || 'อัปโหลดรูปไม่สำเร็จ'
+        );
+      }
+    
+      setDraft(previous => ({
+        ...previous,
+        projects: previous.projects.map(project =>
+          project.id === projectId
+            ? {...project, cover: result.secure_url}
+            : project
+        )
+      }));
+    
+      setMessage(
+        'อัปโหลดแล้ว กดยืนยันและรีเฟรชเพื่อเผยแพร่ภาพปก'
+      );
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  
   return (
     <div className="admin-shell">
       <aside>
@@ -767,13 +852,53 @@ function Admin({data, configured, onClose}) {
 
                     {edit === index && (
                       <div className="form-grid">
+                      
+                        <label>
+                          ภาพปกผลงาน
+                    
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            disabled={busy}
+                            onChange={event => {
+                              const file = event.target.files?.[0];
+                              event.target.value = '';
+                              uploadCover(index, file);
+                            }}
+                          />
+
+                          <small>JPG, PNG หรือ WebP ขนาดไม่เกิน 5 MB</small>
+                          
+                          {project.cover && (
+                            <>
+                              <img
+                                src={safeUrl(project.cover)}
+                                alt="ตัวอย่างภาพปก"
+                                style={{
+                                  width: '100%',
+                                  maxHeight: '220px',
+                                  objectFit: 'cover',
+                                  borderRadius: '12px'
+                                }}
+                              />
+
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => updateProject(index, 'cover', '')}
+                              >
+                                เอาภาพปกออก
+                              </button>
+                            </>
+                          )}
+                        </label>
+                        
                         {[
                           ['title', 'ชื่อผลงาน'],
                           ['description', 'รายละเอียด'],
                           ['category', 'หมวดหมู่'],
                           ['year', 'ปี'],
                           ['url', 'URL เว็บไซต์ (/projects/... หรือ https://...)'],
-                          ['cover', 'URL ภาพปก (เว้นว่างใช้ภาพกราฟิก)']
                         ].map(([key, label]) => (
                           <label key={key}>
                             {label}
@@ -899,11 +1024,12 @@ function Admin({data, configured, onClose}) {
                 </label>
 
                 <label>
-                  รหัสลับใหม่ (อย่างน้อย 8 ตัวอักษร)
+                  เปลี่ยนรหัสลับ — เว้นว่างเพื่อใช้รหัสเดิม
                   <input
                     type="password"
                     minLength={8}
                     value={code}
+                    placeholder="กรอกเฉพาะเมื่อต้องการเปลี่ยนรหัส"
                     onChange={event => setCode(event.target.value)}
                     autoComplete="new-password"
                   />
