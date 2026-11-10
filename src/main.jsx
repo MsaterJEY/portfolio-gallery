@@ -4,7 +4,9 @@ import {initializeApp} from 'firebase/app';
 import {
   getAuth,
   signInWithEmailAndPassword,
-  signOut
+  signOut,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import {initial, safeUrl} from './data';
 import './style.css';
@@ -520,9 +522,13 @@ function Admin({data, configured, onClose}) {
   async function login(event) {
     event.preventDefault();
     setBusy(true);
+    setMessage('');
 
     try {
       const form = new FormData(event.target);
+
+      await setPersistence(auth, browserLocalPersistence);
+
       await signInWithEmailAndPassword(
         auth,
         form.get('email'),
@@ -546,7 +552,6 @@ function Admin({data, configured, onClose}) {
         code: code || undefined
       }, token);
 
-      await signOut(auth);
       location.replace('/');
     } catch (error) {
       setMessage(error.message);
