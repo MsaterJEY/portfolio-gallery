@@ -351,8 +351,6 @@ async function logoutAdmin() {
             <h1>{data.headline}<em>{data.accentLine}</em></h1>
             <p>{data.intro}</p>
           </div>
-
-          <div className="hero-art"><Art/></div>
           <a className="scroll" href="#work">
             เลื่อนเพื่อสำรวจ <span>↓</span>
           </a>
