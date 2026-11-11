@@ -305,3 +305,62 @@ html{scroll-behavior:auto}
     font-size: 9px;
   }
 }
+
+.admin-shell aside .sidebar-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-shell aside .sidebar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid #25352b;
+}
+
+.admin-shell aside .unsaved-label {
+  color: #c7d8cc;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.admin-shell aside .sidebar-save {
+  width: 100%;
+  background: #d5fee0;
+  color: #102317;
+  text-align: center;
+}
+
+.admin-shell aside .sidebar-cancel {
+  width: 100%;
+  background: transparent;
+  color: #becdc3;
+  border: 1px solid #344b3c;
+  text-align: center;
+}
+
+.admin-shell aside .sidebar-logout {
+  margin-top: 0;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .admin-shell aside .sidebar-bottom {
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+
+  .admin-shell aside .sidebar-actions {
+    padding-top: 0;
+    border-top: 0;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .admin-shell aside .unsaved-label {
+    display: none;
+  }
+}

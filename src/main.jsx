@@ -596,6 +596,28 @@ function Admin({data, configured, onClose, onLogout}) {
   const [hotkey, setHotkey] = useState('Ctrl+Shift+K');
   const [code, setCode] = useState('');
 
+  const [savedState, setSavedState] = useState(null);
+
+const hasChanges = savedState !== null && (
+  JSON.stringify({
+    content: draft,
+    shortcut: hotkey
+  }) !== savedState ||
+  code.length > 0
+);
+
+function cancelChanges() {
+  if (!savedState || busy) return;
+
+  const saved = JSON.parse(savedState);
+
+  setDraft(structuredClone(saved.content));
+  setHotkey(saved.shortcut);
+  setCode('');
+  setEdit(-1);
+  setMessage('ยกเลิกการแก้ไขแล้ว');
+}
+
   useEffect(() => auth?.onAuthStateChanged(async currentUser => {
     setUser(currentUser);
     if (currentUser) {
@@ -603,8 +625,18 @@ function Admin({data, configured, onClose, onLogout}) {
         const token = await currentUser.getIdToken();
         const result = await api('admin', null, token);
         setAllowed(true);
-        setDraft(result.content || data);
-        setHotkey(result.shortcut || 'Ctrl+Shift+K');
+
+        const loadedContent = result.content || data;
+        const loadedShortcut = result.shortcut || 'Ctrl+Shift+K';
+
+        setDraft(structuredClone(loadedContent));
+        setHotkey(loadedShortcut);
+
+        setSavedState(JSON.stringify({
+          content: loadedContent,
+          shortcut: loadedShortcut
+        }));
+
         setStats(result.stats);
       } catch (error) {
         setMessage(error.message);
@@ -810,20 +842,33 @@ function Admin({data, configured, onClose, onLogout}) {
             key={id}
           >{title}</button>
         ))}
-        <button onClick={onLogout}>← ออกจากระบบ</button>
-      </aside>
 
+      <div className="sidebar-bottom">
+      {allowed && hasChanges && (
+        <div className="sidebar-actions">
+          <span className="unsaved-label">
+            มีการแก้ไขที่ยังไม่ได้บันทึก
+          </span>
+          <button
+            type="button"
+            className="primary sidebar-save"
+            disabled={busy}
+            onClick={save}
+          >
+            {busy ? 'กำลังดำเนินการ…' : 'ยืนยันและรีเฟรช ↗'}
+          </button>
+          <button type="button" className="sidebar-cancel" disabled={busy} onClick={cancelChanges}>ยกเลิก</button>
+        </div>
+      )}
+      <button type="button" className="sidebar-logout" disabled={busy} onClick={onLogout}>← ออกจากระบบ</button>
+    </div>
+      </aside>
       <div className="admin-main">
         <div className="section-heading">
           <div>
             <span className="eyebrow">PORTFOLIO MANAGEMENT</span>
             <h2>{heading[tab]}</h2>
           </div>
-          {allowed && (
-            <button disabled={busy} className="primary" onClick={save}>
-              {busy ? 'กำลังบันทึก…' : 'ยืนยันและรีเฟรช ↗'}
-            </button>
-          )}
           <button onClick={onClose} aria-label="ปิดแอดมิน">×</button>
         </div>
 
