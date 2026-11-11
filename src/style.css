@@ -274,3 +274,34 @@ html{scroll-behavior:auto}
     height: 240px;
   }
 }
+/* แสดงครั้งละ 10 แถว เลื่อนดูรายการที่เหลือได้ */
+.visitors-scroll {
+  max-height: 480px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #47624f #101a14;
+}
+
+.visitors-scroll .visitor {
+  height: 48px;
+  padding: 0 12px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.visitors-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.visitors-scroll::-webkit-scrollbar-thumb {
+  background: #47624f;
+  border-radius: 6px;
+}
+
+@media (max-width: 600px) {
+  .visitors-scroll .visitor {
+    gap: 8px;
+    font-size: 9px;
+  }
+}

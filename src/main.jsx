@@ -818,16 +818,25 @@ function Admin({data, configured, onClose}) {
                     ไม่ทราบชื่อบุคคล
                   </p>
 
-                  <h3>ผู้ชมล่าสุด</h3>
-                  {(stats?.recent || []).map(visitor => (
-                    <div className="visitor" key={visitor.id}>
-                      <code>{visitor.id.slice(0, 12)}</code>
-                      <span>{visitor.visits} ครั้ง</span>
-                      <span>
-                        {new Date(visitor.lastSeen).toLocaleString('th-TH')}
-                      </span>
-                    </div>
-                  ))}
+                  <h3>ผู้ชมล่าสุด</h3>                  
+                  <div
+                    className="visitors-scroll"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="รายชื่อผู้ชมล่าสุด เลื่อนเพื่อดูเพิ่มเติม"
+                  >
+                    {(stats?.recent || []).map(visitor => (
+                      <div className="visitor" key={visitor.id}>
+                        <code>{visitor.id.slice(0, 12)}</code>
+                    
+                        <span>{visitor.visits} ครั้ง</span>
+                    
+                        <span>
+                          {new Date(visitor.lastSeen).toLocaleString('th-TH')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
