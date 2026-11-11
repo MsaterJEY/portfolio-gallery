@@ -595,8 +595,82 @@ function Admin({data, configured, onClose, onLogout}) {
   const [edit, setEdit] = useState(-1);
   const [hotkey, setHotkey] = useState('Ctrl+Shift+K');
   const [code, setCode] = useState('');
-
   const [savedState, setSavedState] = useState(null);
+  const [categoryName, setCategoryName] = useState('');
+const [editingCategory, setEditingCategory] = useState(null);
+
+// รองรับข้อมูลเก่าที่ยังไม่มีรายการหมวดหมู่แยก
+const categoryOptions = Array.isArray(draft.categories)
+  ? draft.categories
+  : [...new Set(
+      draft.projects
+        .map(project => project.category)
+        .filter(Boolean)
+    )];
+
+function saveCategory() {
+  const name = categoryName.trim();
+
+  if (!name || name.length > 80) {
+    setMessage('ชื่อหมวดหมู่ต้องมี 1–80 ตัวอักษร');
+    return;
+  }
+
+  if (
+    categoryOptions.includes(name) &&
+    name !== editingCategory
+  ) {
+    setMessage('มีหมวดหมู่นี้แล้ว');
+    return;
+  }
+
+  const categories = editingCategory === null
+    ? [...categoryOptions, name]
+    : categoryOptions.map(category =>
+        category === editingCategory ? name : category
+      );
+
+  setDraft({
+    ...draft,
+    categories,
+    // เปลี่ยนชื่อหมวดหมู่ในผลงานที่ใช้อยู่ด้วย
+    projects: draft.projects.map(project =>
+      editingCategory !== null &&
+      project.category === editingCategory
+        ? {...project, category: name}
+        : project
+    )
+  });
+
+  setCategoryName('');
+  setEditingCategory(null);
+  setMessage('แก้ไขหมวดหมู่แล้ว กดยืนยันด้านซ้ายเพื่อบันทึก');
+}
+
+function deleteCategory(name) {
+  const used = draft.projects.some(
+    project => project.category === name
+  );
+
+  if (used) {
+    setMessage(
+      'หมวดหมู่นี้มีผลงานใช้อยู่ กรุณาเปลี่ยนหมวดหมู่ของผลงานเหล่านั้นก่อนลบ'
+    );
+    return;
+  }
+
+  setDraft({
+    ...draft,
+    categories: categoryOptions.filter(category => category !== name)
+  });
+
+  if (editingCategory === name) {
+    setCategoryName('');
+    setEditingCategory(null);
+  }
+
+  setMessage('ลบหมวดหมู่แล้ว กดยืนยันด้านซ้ายเพื่อบันทึก');
+}
 
 const hasChanges = savedState !== null && (
   JSON.stringify({
@@ -614,6 +688,8 @@ function cancelChanges() {
   setDraft(structuredClone(saved.content));
   setHotkey(saved.shortcut);
   setCode('');
+  setCategoryName('');
+  setEditingCategory(null);
   setEdit(-1);
   setMessage('ยกเลิกการแก้ไขแล้ว');
 }
@@ -962,6 +1038,79 @@ function cancelChanges() {
 
             {tab === 'projects' && (
               <>
+              <div className="panel">
+                <h3>จัดการหมวดหมู่</h3>                    
+                <div className="category-editor">
+                  <input
+                    aria-label="ชื่อหมวดหมู่"
+                    placeholder="ชื่อหมวดหมู่"
+                    maxLength={80}
+                    value={categoryName}
+                    disabled={busy}
+                    onChange={event => setCategoryName(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        saveCategory();
+                      }
+                    }}
+                  />              
+
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={busy || !categoryName.trim()}
+                    onClick={saveCategory}
+                  >
+                    {editingCategory === null ? '+ เพิ่มหมวดหมู่' : 'ยืนยันชื่อ'}
+                  </button>             
+                  
+                  {editingCategory !== null && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        setCategoryName('');
+                        setEditingCategory(null);
+                      }}
+                    >ยกเลิกแก้ชื่อ</button>
+                  )}
+                </div>              
+                
+                <div className="category-list">
+                  {categoryOptions.map(category => (
+                    <div className="category-item" key={category}>
+                      <span>{category}</span>             
+                  
+                      <div className="actions">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setEditingCategory(category);
+                            setCategoryName(category);
+                          }}
+                        >แก้ไข</button>             
+                        
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => deleteCategory(category)}
+                        >ลบ</button>
+                      </div>
+                    </div>
+                  ))}             
+
+                  {categoryOptions.length === 0 && (
+                    <p>ยังไม่มีหมวดหมู่ เพิ่มหมวดหมู่ก่อนเลือกให้ผลงาน</p>
+                  )}
+                </div>              
+                
+                <p className="muted">
+                  การเพิ่ม ลบ และแก้ชื่อจะบันทึกลงฐานข้อมูล
+                  เมื่อกดปุ่มยืนยันและรีเฟรชด้านซ้าย
+                </p>
+              </div>
                 <button className="primary" onClick={() => {
                   setDraft({
                     ...draft,
@@ -969,7 +1118,7 @@ function cancelChanges() {
                       id: crypto.randomUUID(),
                       title: 'โปรเจกต์ใหม่',
                       description: '',
-                      category: 'Digital experience',
+                      category: categoryOptions[0] || '',
                       year: String(new Date().getFullYear()),
                       status: 'กำลังทำ',
                       url: '',
@@ -1014,14 +1163,22 @@ function cancelChanges() {
 
                     {edit === index && (
                       <div className="form-grid">
-                      
+                        <label>
+                          หมวดหมู่
+                          <select value={project.category} disabled={busy} onChange={event => updateProject(index, 'category', event.target.value)}>
+                            <option value="" disabled>เลือกหมวดหมู่</option>
+                          
+                            {categoryOptions.map(category => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        
                         <label>
                           ภาพปกผลงาน
-                    
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            disabled={busy}
+                          <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
                             onChange={event => {
                               const file = event.target.files?.[0];
                               event.target.value = '';
@@ -1057,8 +1214,7 @@ function cancelChanges() {
                         
                         {[
                           ['title', 'ชื่อผลงาน'],
-                          ['description', 'รายละเอียด'],
-                          ['category', 'หมวดหมู่'],
+                          ['description', 'รายละเอียด'], 
                           ['year', 'ปี'],
                           ['url', 'URL เว็บไซต์ (/projects/... หรือ https://...)'],
                         ].map(([key, label]) => (

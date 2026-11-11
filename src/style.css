@@ -364,3 +364,39 @@ html{scroll-behavior:auto}
     display: none;
   }
 }
+.category-editor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.category-editor input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.category-list {
+  margin-top: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.category-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid #25352b;
+  font-size: 13px;
+}
+
+.category-item > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.category-item .actions {
+  flex-shrink: 0;
+}
