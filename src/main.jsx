@@ -63,6 +63,18 @@ function Art({type = 'rings'}) {
   );
 }
 
+const ADMIN_GRACE_KEY = 'portfolio-admin-grace-until';
+const ADMIN_GRACE_DURATION = 15 * 60 * 1000;
+
+function readAdminGraceUntil() {
+  try {
+    const value = Number(localStorage.getItem(ADMIN_GRACE_KEY));
+    return Number.isFinite(value) ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
 function App() {
   const [data, setData] = useState(initial);
   const [shortcut, setShortcut] = useState('');
@@ -79,6 +91,39 @@ function App() {
   const [online, setOnline] = useState(false);
   const input = useRef(null);
   const opener = useRef(null);
+
+  const adminGraceUntil = useRef(readAdminGraceUntil());
+
+async function logoutAdmin() {
+  const confirmed = window.confirm(
+    'ต้องการออกจากระบบแอดมินหรือไม่?'
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await signOut(auth);
+
+    const until = Date.now() + ADMIN_GRACE_DURATION;
+    adminGraceUntil.current = until;
+
+    try {
+      localStorage.setItem(ADMIN_GRACE_KEY, String(until));
+    } catch {
+      // ถ้าเก็บข้อมูลไม่ได้ ยังใช้ได้ในหน้าปัจจุบัน
+    }
+
+    setMode('');
+    setBubble(false);
+    setSecret('');
+    setError('');
+    setAttempt(0);
+
+    history.replaceState({}, '', '/');
+  } catch {
+    window.alert('ออกจากระบบไม่สำเร็จ กรุณาลองใหม่');
+  }
+}
 
   useEffect(() => {
     async function load() {
@@ -153,35 +198,66 @@ function App() {
   }
 
   useEffect(() => {
-    function key(event) {
-      if (event.key === 'Escape') {
-        setMode('');
-        setSelected(null);
-        setView(null);
-        opener.current?.focus();
-        return;
-      }
+  function key(event) {
+    if (event.defaultPrevented || event.isComposing) return;
 
-      const combo = [
-        event.ctrlKey ? 'Ctrl' : '',
-        event.altKey ? 'Alt' : '',
-        event.shiftKey ? 'Shift' : '',
-        event.metaKey ? 'Meta' : '',
-        event.key.length === 1 ? event.key.toUpperCase() : event.key
-      ].filter(Boolean).join('+');
-
-      if (shortcut && combo === shortcut) {
-        event.preventDefault();
-        setMode('unlock');
-        setAttempt(0);
-        setSecret('');
-        setError('');
-      }
+    if (event.key === 'Escape') {
+      setMode('');
+      setSelected(null);
+      setView(null);
+      opener.current?.focus();
+      return;
     }
 
-    window.addEventListener('keydown', key);
-    return () => window.removeEventListener('keydown', key);
-  }, [shortcut]);
+    let pressedKey = event.key;
+
+    if (/^Key[A-Z]$/.test(event.code)) {
+      pressedKey = event.code.slice(3);
+    } else if (/^Digit[0-9]$/.test(event.code)) {
+      pressedKey = event.code.slice(5);
+    } else if (pressedKey.length === 1) {
+      pressedKey = pressedKey.toUpperCase();
+    }
+
+    const combo = [
+      event.ctrlKey ? 'Ctrl' : '',
+      event.altKey ? 'Alt' : '',
+      event.shiftKey ? 'Shift' : '',
+      event.metaKey ? 'Meta' : '',
+      pressedKey
+    ].filter(Boolean).join('+');
+
+    if (!shortcut || combo !== shortcut) return;
+
+    event.preventDefault();
+
+    if (event.repeat) return;
+
+    const until = Math.max(
+      adminGraceUntil.current,
+      readAdminGraceUntil()
+    );
+
+    if (Date.now() < until) {
+      setMode('');
+      setSecret('');
+      setError('');
+      setBubble(previous => !previous);
+      return;
+    }
+
+    setMode('unlock');
+    setAttempt(0);
+    setSecret('');
+    setError('');
+  }
+
+  window.addEventListener('keydown', key);
+
+  return () => {
+    window.removeEventListener('keydown', key);
+  };
+}, [shortcut]);
 
   useEffect(() => {
     document.body.style.overflow = mode || selected || view ? 'hidden' : '';
@@ -494,20 +570,21 @@ function App() {
       )}
 
       {mode === 'admin' && (
-        <Admin
-          data={data}
-          configured={configured}
-          onClose={() => {
-            setMode('');
-            history.replaceState({}, '', '/');
-          }}
-        />
-      )}
+  <Admin
+    data={data}
+    configured={configured}
+    onLogout={logoutAdmin}
+    onClose={() => {
+      setMode('');
+      history.replaceState({}, '', '/');
+    }}
+  />
+)}
     </>
   );
 }
 
-function Admin({data, configured, onClose}) {
+function Admin({data, configured, onClose, onLogout}) {
   const [draft, setDraft] = useState(structuredClone(data));
   const [user, setUser] = useState(null);
   const [allowed, setAllowed] = useState(false);
@@ -733,10 +810,7 @@ function Admin({data, configured, onClose}) {
             key={id}
           >{title}</button>
         ))}
-        <button onClick={async () => {
-          if (auth) await signOut(auth);
-          onClose();
-        }}>← ออกจากแอดมิน</button>
+        <button onClick={onLogout}>← ออกจากระบบ</button>
       </aside>
 
       <div className="admin-main">
