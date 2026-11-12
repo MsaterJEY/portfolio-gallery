@@ -62,3 +62,68 @@
 .pm-new-category{flex-wrap:wrap}
 .pm-editor-actions{position:sticky;bottom:-20px;background:#101a14;padding-bottom:16px}
 }
+/* ให้การ์ดสูงเท่ากันและจัดข้อมูลเป็นแนวเดียวกัน */
+.pm-cards {
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+.pm-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.pm-cover {
+  flex-shrink: 0;
+}
+
+.pm-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ชื่อผลงานสำรองพื้นที่เท่ากัน 2 บรรทัด */
+.pm-card-body > h3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+  height: 3.2em;
+  margin: 10px 0;
+}
+
+/* รายละเอียดแสดงเพียงบรรทัดเดียว */
+.pm-card-body .pm-description {
+  display: block;
+  -webkit-line-clamp: unset;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 0;
+  height: 1.8em;
+  line-height: 1.8;
+  margin: 0 0 14px;
+}
+
+.pm-card-body > .pm-url {
+  margin-bottom: 18px;
+}
+
+/* ดันส่วนวันที่และปุ่มให้อยู่ระดับเดียวกัน */
+.pm-card-body .pm-dates {
+  margin-top: auto;
+  min-height: 58px;
+}
+
+.pm-card-body .pm-flags {
+  min-height: 28px;
+  align-items: flex-start;
+}
+
+.pm-card-body .pm-card-actions {
+  margin-top: 12px;
+}

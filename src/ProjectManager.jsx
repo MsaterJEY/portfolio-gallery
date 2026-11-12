@@ -416,47 +416,33 @@ export default function ProjectManager({
                 </span>
               </div>
 
-              <div className="pm-card-actions">
-                <button
-                  disabled={busy || index === 0}
-                  aria-label={`เลื่อน ${project.title} ขึ้น`}
-                  onClick={() => reorder(
-                    project.id,
-                    projects[index - 1].id
-                  )}
-                >↑</button>
+<div className="pm-card-actions">
+  <button
+    disabled={busy}
+    onClick={event =>
+      openEditor(project, event.currentTarget)
+    }
+  >
+    แก้ไข
+  </button>
 
-                <button
-                  disabled={busy || index === projects.length - 1}
-                  aria-label={`เลื่อน ${project.title} ลง`}
-                  onClick={() => reorder(
-                    project.id,
-                    projects[index + 1].id
-                  )}
-                >↓</button>
-
-                <button
-                  disabled={busy}
-                  onClick={event =>
-                    openEditor(project, event.currentTarget)
-                  }
-                >แก้ไข</button>
-
-                <button
-                  className="pm-delete"
-                  disabled={busy}
-                  onClick={() => {
-                    if (window.confirm(
-                      `ลบผลงาน “${project.title}” หรือไม่?`
-                    )) {
-                      onChange(
-                        projects.filter(item => item.id !== project.id),
-                        categories
-                      );
-                    }
-                  }}
-                >ลบ</button>
-              </div>
+  <button
+    className="pm-delete"
+    disabled={busy}
+    onClick={() => {
+      if (window.confirm(
+        `ลบผลงาน “${project.title}” หรือไม่?`
+      )) {
+        onChange(
+          projects.filter(item => item.id !== project.id),
+          categories
+        );
+      }
+    }}
+  >
+    ลบ
+  </button>
+</div>
             </div>
           </article>
         ))}

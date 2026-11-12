@@ -1,4 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {trackSiteVisit} from './visit-session';
 import {createRoot} from 'react-dom/client';
 import {initializeApp} from 'firebase/app';
 import {
@@ -120,7 +121,7 @@ async function logoutAdmin() {
     setError('');
     setAttempt(0);
 
-    history.replaceState({}, '', '/');
+    history.replaceState(history.state, '', '/');
   } catch {
     window.alert('ออกจากระบบไม่สำเร็จ กรุณาลองใหม่');
   }
@@ -142,17 +143,17 @@ async function logoutAdmin() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (!configured) return;
+useEffect(() => {
+  if (!configured) return;
 
-    let visitor = localStorage.getItem('gallery-visitor');
-    if (!visitor) {
-      visitor = crypto.randomUUID();
-      localStorage.setItem('gallery-visitor', visitor);
-    }
-
-    api('event', {kind: 'visit', visitor}).catch(() => {});
-  }, []);
+  return trackSiteVisit((visitor, visitId) =>
+    api('event', {
+      kind: 'visit',
+      visitor,
+      visitId
+    })
+  );
+}, []);
   
   useEffect(() => {
     if (!auth) return;
@@ -575,7 +576,7 @@ async function logoutAdmin() {
     onLogout={logoutAdmin}
     onClose={() => {
       setMode('');
-      history.replaceState({}, '', '/');
+      history.replaceState(history.state, '', '/');
     }}
   />
 )}
