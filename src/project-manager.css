@@ -127,3 +127,105 @@
 .pm-card-body .pm-card-actions {
   margin-top: 12px;
 }
+
+/* ลดขนาดการ์ดโดยประมาณ 25% */
+.pm-manager .pm-cards {
+  grid-template-columns:
+    repeat(auto-fill, minmax(min(195px, 100%), 1fr));
+  grid-auto-rows: auto;
+  align-items: start;
+  gap: 16px;
+}
+
+.pm-manager .pm-card {
+  height: auto;
+}
+
+.pm-manager .pm-cover {
+  height: 143px;
+}
+
+.pm-manager .pm-card-body {
+  padding: 14px;
+}
+
+.pm-manager .pm-card-body > small {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* แทนรูปแบบหัวเรื่องเดิม */
+.pm-manager .pm-card-body > h3 {
+  display: block;
+  height: auto;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  margin: 10px 0;
+  font-size: 15px;
+}
+
+.pm-manager .pm-card-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  line-height: 1.6;
+}
+
+.pm-manager .pm-card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 0;
+  height: 3.2em;
+}
+
+.pm-manager .pm-toggle-icon {
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  color: #d5fee0;
+  font-size: 20px;
+}
+
+.pm-manager .pm-card-info {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+}
+
+.pm-manager .pm-card-info[hidden] {
+  display: none;
+}
+
+.pm-manager .pm-card-info .pm-url {
+  margin-bottom: 0;
+}
+
+.pm-manager .pm-card-info .pm-dates {
+  margin-top: 16px;
+}
+
+.pm-manager .pm-card-actions {
+  margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+  .pm-manager .pm-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .pm-manager .pm-cover {
+    height: 165px;
+  }
+}

@@ -19,6 +19,7 @@ export default function ProjectManager({
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(null);
   const [over, setOver] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const [announcement, setAnnouncement] = useState('');
   const pointer = useRef(null);
   const opener = useRef(null);
@@ -373,77 +374,103 @@ export default function ProjectManager({
               </span>
             </div>
 
-            <div className="pm-card-body">
-              <small>
-                {String(index + 1).padStart(2, '0')} /{' '}
-                {project.category || 'ยังไม่เลือกหมวดหมู่'}
-              </small>
+<div className="pm-card-body">
+  <small>
+    {String(index + 1).padStart(2, '0')} /{' '}
+    {project.category || 'ยังไม่เลือกหมวดหมู่'}
+  </small>
 
-              <h3>{project.title}</h3>
+  <h3>
+    <button
+      type="button"
+      className="pm-card-toggle"
+      aria-expanded={expandedId === project.id}
+      aria-controls={`pm-info-${project.id}`}
+      onClick={() => setExpandedId(previous =>
+        previous === project.id ? null : project.id
+      )}
+    >
+      <span className="pm-card-title">{project.title}</span>
 
-              <p className="pm-description">
-                {project.description || 'ยังไม่มีรายละเอียด'}
-              </p>
+      <span className="pm-toggle-icon" aria-hidden="true">
+        {expandedId === project.id ? '−' : '+'}
+      </span>
+    </button>
+  </h3>
 
-              {project.url ? (
-                <a
-                  className="pm-url"
-                  href={safeUrl(project.url)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {project.url} ↗
-                </a>
-              ) : <span className="pm-url">ยังไม่มี URL</span>}
-
-              <div className="pm-dates">
-                <div>
-                  <small>วันที่สร้าง</small>
-                  <span>{formatDate(project.createdAt)}</span>
-                </div>
-                <div>
-                  <small>อัปเดตล่าสุด</small>
-                  <span>{formatDate(project.updatedAt)}</span>
-                </div>
-              </div>
-
-              <div className="pm-flags">
-                <span>{project.visible ? 'เผยแพร่' : 'ซ่อนอยู่'}</span>
-                <span>
-                  {project.featured
-                    ? 'แสดงในแกลเลอรี'
-                    : 'แสดงในรายการทั้งหมด'}
-                </span>
-              </div>
-
-<div className="pm-card-actions">
-  <button
-    disabled={busy}
-    onClick={event =>
-      openEditor(project, event.currentTarget)
-    }
+  <div
+    id={`pm-info-${project.id}`}
+    className="pm-card-info"
+    hidden={expandedId !== project.id}
   >
-    แก้ไข
-  </button>
+    <p className="pm-description">
+      {project.description || 'ยังไม่มีรายละเอียด'}
+    </p>
 
-  <button
-    className="pm-delete"
-    disabled={busy}
-    onClick={() => {
-      if (window.confirm(
-        `ลบผลงาน “${project.title}” หรือไม่?`
-      )) {
-        onChange(
-          projects.filter(item => item.id !== project.id),
-          categories
-        );
+    {project.url ? (
+      <a
+        className="pm-url"
+        href={safeUrl(project.url)}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {project.url} ↗
+      </a>
+    ) : (
+      <span className="pm-url">ยังไม่มี URL</span>
+    )}
+
+    <div className="pm-dates">
+      <div>
+        <small>วันที่สร้าง</small>
+        <span>{formatDate(project.createdAt)}</span>
+      </div>
+
+      <div>
+        <small>อัปเดตล่าสุด</small>
+        <span>{formatDate(project.updatedAt)}</span>
+      </div>
+    </div>
+
+    <div className="pm-flags">
+      <span>{project.visible ? 'เผยแพร่' : 'ซ่อนอยู่'}</span>
+      <span>
+        {project.featured
+          ? 'แสดงในแกลเลอรี'
+          : 'แสดงในรายการทั้งหมด'}
+      </span>
+    </div>
+  </div>
+
+  <div className="pm-card-actions">
+    <button
+      disabled={busy}
+      onClick={event =>
+        openEditor(project, event.currentTarget)
       }
-    }}
-  >
-    ลบ
-  </button>
+    >
+      แก้ไข
+    </button>
+
+    <button
+      className="pm-delete"
+      disabled={busy}
+      onClick={() => {
+        if (window.confirm(
+          `ลบผลงาน “${project.title}” หรือไม่?`
+        )) {
+          onChange(
+            projects.filter(item => item.id !== project.id),
+            categories
+          );
+        }
+      }}
+    >
+      ลบ
+    </button>
+  </div>
 </div>
-            </div>
+
           </article>
         ))}
       </div>
