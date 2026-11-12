@@ -431,3 +431,41 @@ html{scroll-behavior:auto}
   background: #47624f;
   border-radius: 6px;
 }
+/* ตรึงแถบเมนูไว้ด้านบน */
+header#home > nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 88px;
+  z-index: 15;
+
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(213, 254, 224, 0.08);
+}
+
+/* เว้นพื้นที่ไม่ให้เมนูทับเนื้อหาส่วนแรก */
+header#home {
+  padding-top: 88px;
+}
+
+/* เมื่อกดเมนู หัวข้อจะไม่ถูกแถบเมนูบัง */
+html {
+  scroll-padding-top: 108px;
+}
+
+@media (max-width: 600px) {
+  header#home > nav {
+    height: 75px;
+  }
+
+  header#home {
+    padding-top: 75px;
+  }
+
+  html {
+    scroll-padding-top: 95px;
+  }
+}
