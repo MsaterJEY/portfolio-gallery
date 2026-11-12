@@ -406,7 +406,7 @@ html{scroll-behavior:auto}
 .all-projects-scroll {
   max-height: 432px;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #47624f #080e0b;
 }
@@ -555,4 +555,7 @@ html {
   header#home > nav {
     transition: none;
   }
+}
+.all-projects-scroll {
+  overscroll-behavior-y: auto;
 }
