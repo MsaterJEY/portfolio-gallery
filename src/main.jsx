@@ -424,14 +424,14 @@ useEffect(() => {
               </div>
             </div>
 
+          <div className="all-projects-scroll" tabIndex={0} role="region"aria-label="รายการผลงาน เลื่อนเพื่อดูเพิ่มเติม">
             {visible.filter(project =>
               filter === 'ทั้งหมด' || project.category === filter
             ).map((project, index) => (
               <button
                 key={project.id}
                 className="project-row"
-                onClick={event => openDetail(project, event.currentTarget)}
-              >
+                onClick={event => openDetail(project, event.currentTarget)}>
                 <span className="muted">
                   {String(index + 1).padStart(2, '0')}
                 </span>
@@ -439,12 +439,16 @@ useEffect(() => {
                 <span className="category">{project.category}</span>
                 <span className={
                   'status ' + (project.status === 'เสร็จแล้ว' ? 'done' : '')
-                }>● {project.status}</span>
+                }>
+                  ● {project.status}
+                </span>
+              
                 <span>↗</span>
               </button>
             ))}
+          </div>
+          
           </section>
-
           <section id="about" className="about">
             <div>
               <span className="eyebrow">About</span>

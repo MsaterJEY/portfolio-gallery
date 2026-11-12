@@ -401,3 +401,33 @@ html{scroll-behavior:auto}
 .category-item .actions {
   flex-shrink: 0;
 }
+
+/* สูงสุด 6 แถว แถวละ 72px */
+.all-projects-scroll {
+  max-height: 432px;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #47624f #080e0b;
+}
+
+.all-projects-scroll .project-row {
+  height: 72px;
+  padding-block: 0;
+}
+
+.all-projects-scroll .project-row h3 {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.all-projects-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.all-projects-scroll::-webkit-scrollbar-thumb {
+  background: #47624f;
+  border-radius: 6px;
+}
