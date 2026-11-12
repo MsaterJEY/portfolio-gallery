@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import {initial, safeUrl} from './data';
 import './style.css';
+import ProjectManager from './ProjectManager';
 
 const configured = !!import.meta.env.VITE_FIREBASE_API_KEY;
 
@@ -590,7 +591,6 @@ function Admin({data, configured, onClose, onLogout}) {
   const [stats, setStats] = useState(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [edit, setEdit] = useState(-1);
   const [hotkey, setHotkey] = useState('Ctrl+Shift+K');
   const [code, setCode] = useState('');
   const [savedState, setSavedState] = useState(null);
@@ -688,7 +688,6 @@ function cancelChanges() {
   setCode('');
   setCategoryName('');
   setEditingCategory(null);
-  setEdit(-1);
   setMessage('ยกเลิกการแก้ไขแล้ว');
 }
 
@@ -785,24 +784,6 @@ function cancelChanges() {
   }
 }
 
-  function updateProject(index, key, value) {
-    setDraft(previous => ({
-      ...previous,
-      projects: previous.projects.map((project, current) =>
-        current === index ? {...project, [key]: value} : project
-      )
-    }));
-  }
-
-  function moveProject(index, direction) {
-    const projects = [...draft.projects];
-    const target = index + direction;
-    if (target < 0 || target >= projects.length) return;
-    [projects[index], projects[target]] = [projects[target], projects[index]];
-    setDraft({...draft, projects});
-    setEdit(-1);
-  }
-
   const field = (key, label, type = 'text') => (
     <label>
       {label}
@@ -828,82 +809,52 @@ function cancelChanges() {
     security: 'การเข้าถึงแอดมิน'
   };
   
-  async function uploadCover(index, file) {
-    if (!file) return;
-  
+  async function uploadCover(file) {
+    if (!file) throw Error('กรุณาเลือกรูป');
+
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setMessage('รองรับ JPG, PNG และ WebP เท่านั้น');
-      return;
+      throw Error('รองรับ JPG, PNG และ WebP เท่านั้น');
     }
-  
+
     if (file.size > 5 * 1024 * 1024) {
-      setMessage('รูปต้องมีขนาดไม่เกิน 5 MB');
-      return;
+      throw Error('รูปต้องมีขนาดไม่เกิน 5 MB');
     }
-  
+
     if (!auth?.currentUser) {
-      setMessage('กรุณาเข้าสู่ระบบก่อนอัปโหลด');
-      return;
+      throw Error('กรุณาเข้าสู่ระบบก่อนอัปโหลด');
     }
-  
-    const projectId = draft.projects[index].id;
-  
+
     setBusy(true);
-    setMessage('กำลังอัปโหลดรูป…');
-  
+
     try {
       const token = await auth.currentUser.getIdToken();
-    
-      const permission = await api(
-        'upload-signature',
-        {},
-        token
-      );
-    
+      const permission = await api('upload-signature', {}, token);
       const form = new FormData();
-    
+
       form.append('file', file);
       form.append('api_key', permission.apiKey);
       form.append('timestamp', String(permission.timestamp));
       form.append('folder', permission.folder);
       form.append('allowed_formats', permission.allowedFormats);
       form.append('signature', permission.signature);
-    
+
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${permission.cloudName}/image/upload`,
-        {
-          method: 'POST',
-          body: form
-        }
+        {method: 'POST', body: form}
       );
-    
+
       const result = await response.json();
-    
+
       if (!response.ok || !result.secure_url) {
-        throw Error(
-          result.error?.message || 'อัปโหลดรูปไม่สำเร็จ'
-        );
+        throw Error(result.error?.message || 'อัปโหลดรูปไม่สำเร็จ');
       }
-    
-      setDraft(previous => ({
-        ...previous,
-        projects: previous.projects.map(project =>
-          project.id === projectId
-            ? {...project, cover: result.secure_url}
-            : project
-        )
-      }));
-    
-      setMessage(
-        'อัปโหลดแล้ว กดยืนยันและรีเฟรชเพื่อเผยแพร่ภาพปก'
-      );
-    } catch (error) {
-      setMessage(error.message);
+
+      return result.secure_url;
     } finally {
       setBusy(false);
     }
   }
-  
+
   return (
     <div className="admin-shell">
       <aside>
@@ -1109,162 +1060,16 @@ function cancelChanges() {
                   เมื่อกดปุ่มยืนยันและรีเฟรชด้านซ้าย
                 </p>
               </div>
-                <button className="primary" onClick={() => {
-                  setDraft({
-                    ...draft,
-                    projects: [...draft.projects, {
-                      id: crypto.randomUUID(),
-                      title: 'โปรเจกต์ใหม่',
-                      description: '',
-                      category: categoryOptions[0] || '',
-                      year: String(new Date().getFullYear()),
-                      status: 'กำลังทำ',
-                      url: '',
-                      cover: '',
-                      art: 'rings',
-                      visible: true,
-                      featured: true
-                    }]
-                  });
-                  setEdit(draft.projects.length);
-                }}>+ เพิ่มผลงาน</button>
-
-                {draft.projects.map((project, index) => (
-                  <div className="panel" key={project.id}>
-                    <div className="section-heading">
-                      <h3>{index + 1}. {project.title}</h3>
-                      <div className="actions">
-                        <button
-                          disabled={index === 0}
-                          onClick={() => moveProject(index, -1)}
-                        >↑</button>
-                        <button
-                          disabled={index === draft.projects.length - 1}
-                          onClick={() => moveProject(index, 1)}
-                        >↓</button>
-                        <button onClick={() => setEdit(
-                          edit === index ? -1 : index
-                        )}>แก้ไข</button>
-                        <button onClick={() => {
-                          if (confirm('ลบผลงานนี้?')) {
-                            setDraft({
-                              ...draft,
-                              projects: draft.projects.filter(
-                                item => item.id !== project.id
-                              )
-                            });
-                            setEdit(-1);
-                          }
-                        }}>ลบ</button>
-                      </div>
-                    </div>
-
-                    {edit === index && (
-                      <div className="form-grid">
-                        <label>
-                          หมวดหมู่
-                          <select value={project.category} disabled={busy} onChange={event => updateProject(index, 'category', event.target.value)}>
-                            <option value="" disabled>เลือกหมวดหมู่</option>
-                          
-                            {categoryOptions.map(category => (
-                              <option key={category} value={category}>
-                                {category}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        
-                        <label>
-                          ภาพปกผลงาน
-                          <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
-                            onChange={event => {
-                              const file = event.target.files?.[0];
-                              event.target.value = '';
-                              uploadCover(index, file);
-                            }}
-                          />
-
-                          <small>JPG, PNG หรือ WebP ขนาดไม่เกิน 5 MB</small>
-                          
-                          {project.cover && (
-                            <>
-                              <img
-                                src={safeUrl(project.cover)}
-                                alt="ตัวอย่างภาพปก"
-                                style={{
-                                  width: '100%',
-                                  maxHeight: '220px',
-                                  objectFit: 'cover',
-                                  borderRadius: '12px'
-                                }}
-                              />
-
-                              <button
-                                type="button"
-                                disabled={busy}
-                                onClick={() => updateProject(index, 'cover', '')}
-                              >
-                                เอาภาพปกออก
-                              </button>
-                            </>
-                          )}
-                        </label>
-                        
-                        {[
-                          ['title', 'ชื่อผลงาน'],
-                          ['description', 'รายละเอียด'], 
-                          ['year', 'ปี'],
-                          ['url', 'URL เว็บไซต์ (/projects/... หรือ https://...)'],
-                        ].map(([key, label]) => (
-                          <label key={key}>
-                            {label}
-                            <input
-                              value={project[key]}
-                              onChange={event => updateProject(
-                                index, key, event.target.value
-                              )}
-                            />
-                          </label>
-                        ))}
-
-                        {[
-                          ['status', 'สถานะ', ['เสร็จแล้ว', 'กำลังทำ']],
-                          ['art', 'ภาพกราฟิก', ['rings', 'poster', 'research']]
-                        ].map(([key, label, options]) => (
-                          <label key={key}>
-                            {label}
-                            <select
-                              value={project[key]}
-                              onChange={event => updateProject(
-                                index, key, event.target.value
-                              )}
-                            >
-                              {options.map(option => (
-                                <option key={option}>{option}</option>
-                              ))}
-                            </select>
-                          </label>
-                        ))}
-
-                        {[
-                          ['visible', 'เผยแพร่'],
-                          ['featured', 'แสดงในแกลเลอรี']
-                        ].map(([key, label]) => (
-                          <label key={key} className="check">
-                            <input
-                              type="checkbox"
-                              checked={project[key]}
-                              onChange={event => updateProject(
-                                index, key, event.target.checked
-                              )}
-                            />
-                            {label}
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                <ProjectManager
+                  projects={draft.projects}
+                  categories={categoryOptions}
+                  busy={busy}
+                  Art={Art}
+                  onUpload={uploadCover}
+                  onChange={(projects, categories) => setDraft(previous => ({
+                    ...previous, projects, categories
+                  }))}
+                />
               </>
             )}
 

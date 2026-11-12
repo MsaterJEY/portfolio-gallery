@@ -3,6 +3,7 @@ import {getFirestore, FieldValue} from 'firebase-admin/firestore';
 import {getAuth} from 'firebase-admin/auth';
 import { createHash } from 'node:crypto';
 import {hashCode, checkCode, fingerprint, validate} from '../lib/core.js';
+import {stampProjects} from '../lib/project-dates.js';
 
 function database() {
   if (!getApps().length) {
@@ -200,6 +201,7 @@ export default async function handler(req, res) {
 
       await db.runTransaction(async transaction => {
         const snapshot = await transaction.get(privateRef);
+        const currentSite = await transaction.get(publicRef);
 
         if (!snapshot.exists && !body.code) {
           throw Object.assign(
@@ -209,7 +211,13 @@ export default async function handler(req, res) {
         }
 
         transaction.set(publicRef, {
-          content: body.content,
+          content: {
+            ...body.content,
+            projects: stampProjects(
+              body.content.projects,
+              currentSite.data()?.content?.projects || []
+            )
+          },
           shortcut: body.shortcut,
           updatedAt: Date.now()
         });
