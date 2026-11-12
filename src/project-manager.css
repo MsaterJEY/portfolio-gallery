@@ -229,3 +229,35 @@
     height: 165px;
   }
 }
+
+/* จัดพื้นที่หลังนำกล่องหมวดหมู่ออก */
+.admin-main .pm-manager {
+  margin-top: 0;
+}
+
+.pm-manager .pm-toolbar {
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.pm-manager .pm-cards {
+  margin-top: 16px;
+}
+
+/* ยุบ: ลูกศรลง / เปิด: ลูกศรขึ้น */
+.pm-manager .pm-toggle-icon {
+  display: inline-block;
+  transform: rotate(180deg);
+  transition: transform 0.2s ease;
+  line-height: 1;
+}
+
+.pm-manager .pm-toggle-icon.is-open {
+  transform: rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-manager .pm-toggle-icon {
+    transition: none;
+  }
+}

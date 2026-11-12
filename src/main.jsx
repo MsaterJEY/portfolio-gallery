@@ -986,93 +986,20 @@ function cancelChanges() {
               </>
             )}
 
-            {tab === 'projects' && (
-              <>
-              <div className="panel">
-                <h3>จัดการหมวดหมู่</h3>                    
-                <div className="category-editor">
-                  <input
-                    aria-label="ชื่อหมวดหมู่"
-                    placeholder="ชื่อหมวดหมู่"
-                    maxLength={80}
-                    value={categoryName}
-                    disabled={busy}
-                    onChange={event => setCategoryName(event.target.value)}
-                    onKeyDown={event => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        saveCategory();
-                      }
-                    }}
-                  />              
-
-                  <button
-                    type="button"
-                    className="primary"
-                    disabled={busy || !categoryName.trim()}
-                    onClick={saveCategory}
-                  >
-                    {editingCategory === null ? '+ เพิ่มหมวดหมู่' : 'ยืนยันชื่อ'}
-                  </button>             
-                  
-                  {editingCategory !== null && (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => {
-                        setCategoryName('');
-                        setEditingCategory(null);
-                      }}
-                    >ยกเลิกแก้ชื่อ</button>
-                  )}
-                </div>              
-                
-                <div className="category-list">
-                  {categoryOptions.map(category => (
-                    <div className="category-item" key={category}>
-                      <span>{category}</span>             
-                  
-                      <div className="actions">
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => {
-                            setEditingCategory(category);
-                            setCategoryName(category);
-                          }}
-                        >แก้ไข</button>             
-                        
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => deleteCategory(category)}
-                        >ลบ</button>
-                      </div>
-                    </div>
-                  ))}             
-
-                  {categoryOptions.length === 0 && (
-                    <p>ยังไม่มีหมวดหมู่ เพิ่มหมวดหมู่ก่อนเลือกให้ผลงาน</p>
-                  )}
-                </div>              
-                
-                <p className="muted">
-                  การเพิ่ม ลบ และแก้ชื่อจะบันทึกลงฐานข้อมูล
-                  เมื่อกดปุ่มยืนยันและรีเฟรชด้านซ้าย
-                </p>
-              </div>
-                <ProjectManager
-                  projects={draft.projects}
-                  categories={categoryOptions}
-                  busy={busy}
-                  Art={Art}
-                  onUpload={uploadCover}
-                  onChange={(projects, categories) => setDraft(previous => ({
-                    ...previous, projects, categories
-                  }))}
-                />
-              </>
-            )}
+{tab === 'projects' && (
+  <ProjectManager
+    projects={draft.projects}
+    categories={categoryOptions}
+    busy={busy}
+    Art={Art}
+    onUpload={uploadCover}
+    onChange={(projects, categories) => setDraft(previous => ({
+      ...previous,
+      projects,
+      categories
+    }))}
+  />
+)}
 
             {tab === 'appearance' && (
               <div className="panel form-grid">

@@ -392,9 +392,7 @@ export default function ProjectManager({
     >
       <span className="pm-card-title">{project.title}</span>
 
-      <span className="pm-toggle-icon" aria-hidden="true">
-        {expandedId === project.id ? '−' : '+'}
-      </span>
+      <span className={'pm-toggle-icon' + (expandedId === project.id ? ' is-open' : '')} aria-hidden="true">^</span>
     </button>
   </h3>
 
@@ -422,7 +420,7 @@ export default function ProjectManager({
 
     <div className="pm-dates">
       <div>
-        <small>วันที่สร้าง</small>
+        <small>วันที่อัพโหลด</small>
         <span>{formatDate(project.createdAt)}</span>
       </div>
 
