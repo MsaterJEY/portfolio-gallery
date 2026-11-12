@@ -91,6 +91,24 @@ function App() {
   const [error, setError] = useState('');
   const [bubble, setBubble] = useState(false);
   const [online, setOnline] = useState(false);
+  const [navCompact, setNavCompact] = useState(false);
+
+    useEffect(() => {
+      function handleScroll() {
+        setNavCompact(window.scrollY > 80);
+      }
+    
+      handleScroll();
+    
+      window.addEventListener('scroll', handleScroll, {
+        passive: true
+      });
+    
+      return () => {
+        window.removeEventListener('scroll', handleScroll);
+      };
+    }, []);
+
   const input = useRef(null);
   const opener = useRef(null);
 
@@ -336,7 +354,7 @@ useEffect(() => {
         }}
       >
         <header id="home">
-          <nav>
+          <nav className={navCompact ? 'nav-compact' : ''}>
             <a href="#home" className="home-link">หน้าแรก</a>
             <a className="brand" href="#home"><i/>{data.brand}</a>
             <div>
@@ -447,7 +465,7 @@ useEffect(() => {
               </button>
             ))}
           </div>
-          
+
           </section>
           <section id="about" className="about">
             <div>

@@ -469,3 +469,90 @@ html {
     scroll-padding-top: 95px;
   }
 }
+/* อยู่บนสุด: เมนูเต็มความกว้าง */
+header#home > nav {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: 88px;
+  padding-inline: 5%;
+  z-index: 15;
+
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: none;
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  transition:
+    top 0.25s ease,
+    width 0.25s ease,
+    height 0.25s ease,
+    padding 0.25s ease,
+    border-radius 0.25s ease,
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* เลื่อนลง: ย่อเป็นแคปซูลตรงกลาง */
+header#home > nav.nav-compact {
+  top: 12px;
+  width: min(1000px, calc(100% - 32px));
+  height: 64px;
+  padding-inline: 28px;
+
+  border-color: rgba(213, 254, 224, 0.16);
+  border-radius: 999px;
+  background: rgba(10, 22, 15, 0.9);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* รักษาพื้นที่เนื้อหา ไม่ให้กระโดดตอนเมนูย่อ */
+header#home {
+  padding-top: 88px;
+}
+
+html {
+  scroll-padding-top: 108px;
+}
+
+@media (max-width: 600px) {
+  header#home > nav {
+    height: 75px;
+    padding-inline: 20px;
+  }
+
+  header#home > nav.nav-compact {
+    top: 10px;
+    width: calc(100% - 20px);
+    height: 60px;
+    padding-inline: 16px;
+  }
+
+  header#home > nav.nav-compact .brand {
+    font-size: 13px;
+  }
+
+  header#home > nav.nav-compact > div {
+    gap: 12px;
+    font-size: 10px;
+  }
+
+  header#home {
+    padding-top: 75px;
+  }
+
+  html {
+    scroll-padding-top: 95px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  header#home > nav {
+    transition: none;
+  }
+}
