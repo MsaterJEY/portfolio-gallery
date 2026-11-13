@@ -129,24 +129,22 @@ function App() {
   const [error, setError] = useState('');
   const [bubble, setBubble] = useState(false);
   const [copyMessage, setCopyMessage] = useState('');
-  const emailDialogRef = useRef(null);
-  const [emailCopyError, setEmailCopyError] = useState('');
 
   async function copyEmailAddress() {
+    if (!data.email) return;
+
     clearTimeout(copyTimer.current);
 
     try {
       await navigator.clipboard.writeText(data.email);
-
-      emailDialogRef.current?.close();
       setCopyMessage('คัดลอกสำเร็จ');
-
-      copyTimer.current = setTimeout(() => {
-        setCopyMessage('');
-      }, 2500);
     } catch {
-      setEmailCopyError('คัดลอกไม่สำเร็จ กรุณาลองอีกครั้ง');
+      setCopyMessage('คัดลอกไม่สำเร็จ กรุณาลองอีกครั้ง');
     }
+
+    copyTimer.current = setTimeout(() => {
+      setCopyMessage('');
+    }, 2500);
   }
     const copyTimer = useRef(null);
 
@@ -587,12 +585,9 @@ useEffect(() => {
               <button
                 type="button"
                 className="contact-icon"
-                aria-label={'ติดต่อทางอีเมล ' + data.email}
-                title={data.email}
-                onClick={() => {
-                  setEmailCopyError('');
-                  emailDialogRef.current?.showModal();
-                }}
+                aria-label={'คัดลอกอีเมล ' + data.email}
+                title={'คัดลอกอีเมล ' + data.email}
+                onClick={copyEmailAddress}
               >
                 <ContactIcon kind="email"/>
               </button>
@@ -639,64 +634,6 @@ useEffect(() => {
       >
         {copyMessage}
       </div>
-      
-      <dialog
-        ref={emailDialogRef}
-        className="email-confirm-dialog"
-        aria-labelledby="email-dialog-title"
-        aria-describedby="email-dialog-description"
-        onClose={() => setEmailCopyError('')}
-        onKeyDown={event => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          className="email-dialog-close"
-          aria-label="ปิดหน้าต่างอีเมล"
-          onClick={() => emailDialogRef.current?.close()}
-        >
-          ×
-        </button>
-            
-        <h3 id="email-dialog-title">
-          ติดต่อทางอีเมล
-        </h3>
-            
-        <p id="email-dialog-description">
-          ต้องการไปยังหน้าเขียนอีเมลใน Gmail หรือไม่?
-        </p>
-            
-        <div className="email-dialog-address">
-          {data.email}
-        </div>
-            
-        {emailCopyError && (
-          <p className="email-dialog-error" role="alert">
-            {emailCopyError}
-          </p>
-        )}
-      
-        <div className="email-dialog-actions">
-          <a
-            className="primary"
-            href={
-              'https://mail.google.com/mail/?view=cm&fs=1&to=' +
-              encodeURIComponent(data.email || '')
-            }
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => emailDialogRef.current?.close()}
-          >
-            ตกลง
-          </a>
-          
-          <button
-            type="button"
-            onClick={copyEmailAddress}
-          >
-            คัดลอกอีเมล
-          </button>
-        </div>
-      </dialog>
 
       {selected && (
         <div className="overlay" onClick={() => setSelected(null)}>
