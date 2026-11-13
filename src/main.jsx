@@ -79,6 +79,41 @@ function readAdminGraceUntil() {
   }
 }
 
+function ContactIcon({kind}) {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {kind === 'phone' && (
+        <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.8 2.1Z"/>
+      )}
+
+      {kind === 'email' && (
+        <>
+          <rect x="3" y="5" width="18" height="14" rx="3"/>
+          <path d="m3 7 9 6 9-6"/>
+        </>
+      )}
+
+      {kind === 'instagram' && (
+        <>
+          <rect x="3" y="3" width="18" height="18" rx="5"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="17.5" cy="6.5" r=".7" fill="currentColor" stroke="none"/>
+        </>
+      )}
+    </svg>
+  );
+}
+
 function App() {
   const [data, setData] = useState(initial);
   const [shortcut, setShortcut] = useState('');
@@ -338,6 +373,20 @@ useEffect(() => {
     track(project, 'detail');
   }
 
+  const phoneText = (data.phone || '').trim();
+  const phoneDigits = phoneText.replace(/\D/g, '');
+  const phoneLink = phoneText.startsWith('+')
+    ? '+' + phoneDigits
+    : phoneDigits;
+  
+  const instagramName = (data.instagram || '')
+    .trim()
+    .replace(/^@/, '');
+  
+  const validInstagram = /^[A-Za-z0-9._]{1,30}$/.test(
+    instagramName
+  );
+
   const visible = data.projects.filter(project => project.visible);
   const categories = [
     'ทั้งหมด',
@@ -481,9 +530,46 @@ useEffect(() => {
             <span className="eyebrow">Contact</span>
             <h2>มาสร้างสิ่งดี ๆ <em>ด้วยกัน</em></h2>
             <p>พร้อมคุยงานใหม่ ๆ ทักมาได้ที่ช่องทางด้านล่าง</p>
-            <a className="email" href={'mailto:' + data.email}>
-              {data.email} ↗
-            </a>
+            <div className="contact-links">
+            {phoneDigits && (
+              <a
+                className="contact-icon"
+                href={'tel:' + phoneLink}
+                aria-label={'โทร ' + phoneText}
+                title={phoneText}
+              >
+                <ContactIcon kind="phone"/>
+              </a>
+            )}
+
+            {data.email && (
+              <a
+                className="contact-icon"
+                href={'mailto:' + data.email}
+                aria-label={'ส่งอีเมลถึง ' + data.email}
+                title={data.email}
+              >
+                <ContactIcon kind="email"/>
+              </a>
+            )}
+
+            {validInstagram && (
+              <a
+                className="contact-icon"
+                href={
+                  'https://www.instagram.com/' +
+                  encodeURIComponent(instagramName) +
+                  '/'
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={'Instagram @' + instagramName}
+                title={'Instagram @' + instagramName}
+              >
+                <ContactIcon kind="instagram"/>
+              </a>
+            )}
+          </div>
           </section>
         </main>
 
@@ -814,7 +900,7 @@ function cancelChanges() {
       {label}
       <input
         type={type}
-        value={draft[key]}
+        value={draft[key] ?? ''}
         onChange={event => setDraft({...draft, [key]: event.target.value})}
       />
     </label>
@@ -1062,6 +1148,8 @@ function cancelChanges() {
                 {field('intro', 'คำเกริ่น')}
                 {field('about', 'เกี่ยวกับ')}
                 {field('email', 'อีเมลติดต่อ', 'email')}
+                {field('phone', 'เบอร์โทร เช่น 0812345678', 'tel')}
+                {field('instagram','ชื่อบัญชี Instagram — ไม่ต้องใส่ URL')}
                 {field('accent', 'สีหลัก', 'color')}
 
                 <label>
