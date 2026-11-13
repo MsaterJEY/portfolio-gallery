@@ -392,3 +392,114 @@ header#home nav .nav-work-trigger {
 .draggable-admin-bubble.is-dragging {
   cursor: grabbing;
 }
+
+.contact-links .contact-icon {
+  padding: 0;
+  cursor: pointer;
+}
+
+.contact-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+
+  max-width: calc(100% - 32px);
+  padding: 12px 22px;
+  border: 1px solid #3d6549;
+  border-radius: 999px;
+  background: #102317;
+  color: #d5fee0;
+  box-shadow: 0 8px 28px #0006;
+
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+
+  opacity: 0;
+  transform: translate(-50%, 10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.contact-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.email-confirm-dialog {
+  position: fixed;
+  width: min(420px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  margin: auto;
+  padding: 32px 24px 24px;
+
+  background: #101a14;
+  color: #edf5ef;
+  border: 1px solid #3d6549;
+  border-radius: 20px;
+  box-shadow: 0 24px 80px #0008;
+}
+
+.email-confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.email-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 22px;
+  border-radius: 50%;
+}
+
+.email-confirm-dialog h3 {
+  margin: 8px 32px 14px 0;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.email-confirm-dialog p {
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.email-dialog-address {
+  margin-block: 18px;
+  padding: 12px;
+  border: 1px solid #2c4434;
+  border-radius: 10px;
+  color: #d5fee0;
+  font-size: 14px;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.email-dialog-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.email-dialog-actions > a,
+.email-dialog-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  padding: 12px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+.email-confirm-dialog .email-dialog-error {
+  color: #f2b9a8;
+}

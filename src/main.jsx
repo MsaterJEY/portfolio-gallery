@@ -128,6 +128,46 @@ function App() {
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState('');
   const [bubble, setBubble] = useState(false);
+  const [copyMessage, setCopyMessage] = useState('');
+  const emailDialogRef = useRef(null);
+  const [emailCopyError, setEmailCopyError] = useState('');
+
+  async function copyEmailAddress() {
+    clearTimeout(copyTimer.current);
+
+    try {
+      await navigator.clipboard.writeText(data.email);
+
+      emailDialogRef.current?.close();
+      setCopyMessage('คัดลอกสำเร็จ');
+
+      copyTimer.current = setTimeout(() => {
+        setCopyMessage('');
+      }, 2500);
+    } catch {
+      setEmailCopyError('คัดลอกไม่สำเร็จ กรุณาลองอีกครั้ง');
+    }
+  }
+    const copyTimer = useRef(null);
+
+  useEffect(() => {
+    return () => clearTimeout(copyTimer.current);
+  }, []);
+
+  async function copyPhoneNumber() {
+    clearTimeout(copyTimer.current);
+
+    try {
+      await navigator.clipboard.writeText(phoneText);
+      setCopyMessage('คัดลอกสำเร็จ');
+    } catch {
+      setCopyMessage('คัดลอกไม่สำเร็จ กรุณาลองอีกครั้ง');
+    }
+
+    copyTimer.current = setTimeout(() => {
+      setCopyMessage('');
+    }, 2500);
+  }
   const [adminSession, setAdminSession] = useState(false);
   const [online, setOnline] = useState(false);
   const [navCompact, setNavCompact] = useState(false);
@@ -380,9 +420,6 @@ useEffect(() => {
 
   const phoneText = (data.phone || '').trim();
   const phoneDigits = phoneText.replace(/\D/g, '');
-  const phoneLink = phoneText.startsWith('+')
-    ? '+' + phoneDigits
-    : phoneDigits;
   
   const instagramName = (data.instagram || '')
     .trim()
@@ -537,25 +574,28 @@ useEffect(() => {
             <p>พร้อมคุยงานใหม่ ๆ ติดต่อมาได้ที่ช่องทางด้านล่าง</p>
             <div className="contact-links">
             {phoneDigits && (
-              <a
+              <button
+                type="button"
                 className="contact-icon"
-                href={'tel:' + phoneLink}
-                aria-label={'โทร ' + phoneText}
-                title={phoneText}
-              >
-                <ContactIcon kind="phone"/>
-              </a>
+                onClick={copyPhoneNumber}
+                aria-label={'คัดลอกเบอร์โทร ' + phoneText}
+                title={'คัดลอกเบอร์โทร ' + phoneText}><ContactIcon kind="phone"/>
+              </button>
             )}
 
             {data.email && (
-              <a
+              <button
+                type="button"
                 className="contact-icon"
-                href={'mailto:' + data.email}
-                aria-label={'ส่งอีเมลถึง ' + data.email}
+                aria-label={'ติดต่อทางอีเมล ' + data.email}
                 title={data.email}
+                onClick={() => {
+                  setEmailCopyError('');
+                  emailDialogRef.current?.showModal();
+                }}
               >
                 <ContactIcon kind="email"/>
-              </a>
+              </button>
             )}
 
             {validInstagram && (
@@ -587,6 +627,76 @@ useEffect(() => {
           <a href="#home">กลับด้านบน ↑</a>
         </footer>
       </div>
+
+      <div
+        className={
+          'contact-toast' +
+          (copyMessage ? ' is-visible' : '')
+        }
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {copyMessage}
+      </div>
+      
+      <dialog
+        ref={emailDialogRef}
+        className="email-confirm-dialog"
+        aria-labelledby="email-dialog-title"
+        aria-describedby="email-dialog-description"
+        onClose={() => setEmailCopyError('')}
+        onKeyDown={event => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          className="email-dialog-close"
+          aria-label="ปิดหน้าต่างอีเมล"
+          onClick={() => emailDialogRef.current?.close()}
+        >
+          ×
+        </button>
+            
+        <h3 id="email-dialog-title">
+          ติดต่อทางอีเมล
+        </h3>
+            
+        <p id="email-dialog-description">
+          ต้องการไปยังหน้าเขียนอีเมลใน Gmail หรือไม่?
+        </p>
+            
+        <div className="email-dialog-address">
+          {data.email}
+        </div>
+            
+        {emailCopyError && (
+          <p className="email-dialog-error" role="alert">
+            {emailCopyError}
+          </p>
+        )}
+      
+        <div className="email-dialog-actions">
+          <a
+            className="primary"
+            href={
+              'https://mail.google.com/mail/?view=cm&fs=1&to=' +
+              encodeURIComponent(data.email || '')
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => emailDialogRef.current?.close()}
+          >
+            ตกลง
+          </a>
+          
+          <button
+            type="button"
+            onClick={copyEmailAddress}
+          >
+            คัดลอกอีเมล
+          </button>
+        </div>
+      </dialog>
 
       {selected && (
         <div className="overlay" onClick={() => setSelected(null)}>
@@ -677,7 +787,7 @@ useEffect(() => {
       )}
 
       {bubble && (<AdminBubble onOpen={() => setMode('admin')}/>)}
-        
+
       {mode === 'admin' && (
       <Admin
         data={data}
