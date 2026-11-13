@@ -58,7 +58,7 @@ export default function WorkMenu({onShowAll}) {
         aria-controls="nav-work-links"
         onClick={() => setOpen(previous => !previous)}
       >
-        ผลงาน <span aria-hidden="true">⌄</span>
+        ผลงาน
       </button>
 
       <div

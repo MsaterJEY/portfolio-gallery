@@ -316,3 +316,29 @@ header#home nav .nav-work-list a:hover, header#home nav .nav-work-list a:focus-v
   #about.about > div, #about.about > p { min-height: 0; padding: 24px; }
   header#home nav .nav-work-list a { font-size: 12px; }
 }
+
+header#home > nav > div {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 28px;
+}
+
+header#home > nav > div > a,
+header#home nav .nav-work-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0;
+  font: inherit;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  header#home > nav > div,
+  header#home > nav.nav-compact > div {
+    gap: 16px;
+  }
+}
