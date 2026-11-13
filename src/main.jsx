@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {trackSiteVisit} from './visit-session';
 import {createRoot} from 'react-dom/client';
 import {initializeApp} from 'firebase/app';
+
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -12,6 +13,7 @@ import {
 import {initial, safeUrl} from './data';
 import './style.css';
 import ProjectManager from './ProjectManager';
+import WorkMenu from './WorkMenu';
 
 const configured = !!import.meta.env.VITE_FIREBASE_API_KEY;
 
@@ -358,7 +360,7 @@ useEffect(() => {
             <a href="#home" className="home-link">หน้าแรก</a>
             <a className="brand" href="#home"><i/>{data.brand}</a>
             <div>
-              <a href="#work">ผลงาน</a>
+              <WorkMenu onShowAll={() => setFilter('ทั้งหมด')}/>
               <a href="#about">เกี่ยวกับ</a>
               <a href="#contact">ติดต่อ</a>
             </div>
@@ -388,7 +390,7 @@ useEffect(() => {
                   ผลงานที่ทำเสร็จ
                   <span>
                     {' / ' + String(
-                      visible.filter(project => project.featured).length
+                      visible.filter(project => project.featured && project.status === 'เสร็จแล้ว').length
                     ).padStart(2, '0')}
                   </span>
                 </h2>
@@ -423,7 +425,7 @@ useEffect(() => {
             </div>
           </section>
 
-          <section className="all-projects">
+          <section id="all-projects" className="all-projects">
             <div className="section-heading">
               <div>
                 <span className="eyebrow">All projects</span>
@@ -912,12 +914,41 @@ function cancelChanges() {
     </div>
       </aside>
       <div className="admin-main">
-        <div className="section-heading">
-          <div>
+        <div className="section-heading admin-heading">
+          <div className="admin-heading-text">
             <span className="eyebrow">PORTFOLIO MANAGEMENT</span>
             <h2>{heading[tab]}</h2>
-          </div>
-          <button onClick={onClose} aria-label="ปิดแอดมิน">×</button>
+          </div>    
+          {allowed && hasChanges && (
+            <div className="admin-mobile-actions">
+              <button
+                type="button"
+                className="mobile-save"
+                disabled={busy}
+                onClick={save}
+              >
+                {busy ? 'กำลังดำเนินการ…' : 'ยืนยันและรีเฟรช ↗'}
+              </button>
+          
+              <button
+                type="button"
+                className="mobile-cancel"
+                disabled={busy}
+                onClick={cancelChanges}
+              >
+                ยกเลิก
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="admin-close"
+            onClick={onClose}
+            aria-label="ปิดแอดมิน"
+          >
+            ×
+          </button>
         </div>
 
         {message && <p role="alert" className="notice">{message}</p>}
