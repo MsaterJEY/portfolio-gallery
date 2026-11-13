@@ -460,3 +460,94 @@ header#home > nav.nav-compact > .brand {
     height: 42px;
   }
 }
+
+/* ซ้อนชื่อเว็บกับโลโก้ในตำแหน่งเดียวกัน */
+header#home nav .navbar-brand {
+  display: grid;
+  grid-template-areas: "brand";
+  align-items: center;
+  justify-items: center;
+  gap: 0;
+  min-width: 48px;
+  height: 48px;
+}
+
+.navbar-brand-text,
+.navbar-brand .navbar-logo-wrap {
+  grid-area: brand;
+  pointer-events: none;
+
+  transition:
+    opacity 0.25s ease,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.3s ease;
+}
+
+/* บนสุด: แสดงชื่อ */
+.navbar-brand-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition-delay: 0.06s;
+}
+
+.navbar-brand-text > i {
+  flex-shrink: 0;
+}
+
+.navbar-brand-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* เตรียมโลโก้ก่อนปรากฏ */
+.navbar-brand .navbar-logo-wrap {
+  opacity: 0;
+  transform: translateY(8px) scale(0.86);
+  filter: blur(3px);
+  transition-delay: 0s;
+}
+
+/* เลื่อนลง: ชื่อจางออก */
+header#home nav.nav-compact .navbar-brand-text {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+  filter: blur(3px);
+  transition-delay: 0s;
+}
+
+/* เลื่อนลง: โลโก้ปรากฏ */
+header#home nav.nav-compact .navbar-logo-wrap {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition-delay: 0.06s;
+}
+
+@media (max-width: 600px) {
+  header#home nav .navbar-brand {
+    min-width: 0;
+    max-width: 100%;
+    height: 42px;
+  }
+}
+
+/* รองรับผู้ใช้ที่เลือกให้ลดการเคลื่อนไหว */
+@media (prefers-reduced-motion: reduce) {
+  .navbar-brand-text,
+  .navbar-brand .navbar-logo-wrap,
+  header#home nav.nav-compact .navbar-brand-text,
+  header#home nav.nav-compact .navbar-logo-wrap {
+    transition: none;
+    transform: none;
+    filter: none;
+  }
+}

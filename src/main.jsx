@@ -447,28 +447,30 @@ useEffect(() => {
         <header id="home">
           <nav className={navCompact ? 'nav-compact' : ''}>
             <a href="#home" className="home-link">หน้าแรก</a>
+
             <a
-              className="brand"
+              className="brand navbar-brand"
               href="#home"
               aria-label={data.brand + ' — กลับหน้าแรก'}
             >
-              {navCompact ? (
-                <span className="navbar-logo-wrap">
-                  <img
-                    className="navbar-logo"
-                    src="/images/wg-logo.png"
-                    alt="WG"
-                    width="48"
-                    height="48"
-                  />
-                </span>
-              ) : (
-                <>
-                  <i/>
+              <span className="navbar-brand-text" aria-hidden="true">
+                <i/>
+                <span className="navbar-brand-name">
                   {data.brand}
-                </>
-              )}
+                </span>
+              </span>
+                  
+              <span className="navbar-logo-wrap" aria-hidden="true">
+                <img
+                  className="navbar-logo"
+                  src="/images/wg-logo.png"
+                  alt=""
+                  width="48"
+                  height="48"
+                />
+              </span>
             </a>
+
             <div>
               <WorkMenu onShowAll={() => setFilter('ทั้งหมด')}/>
               <a href="#about">เกี่ยวกับ</a>
