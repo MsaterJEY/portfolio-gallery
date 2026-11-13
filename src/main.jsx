@@ -3,6 +3,7 @@ import {trackSiteVisit} from './visit-session';
 import {createRoot} from 'react-dom/client';
 import {initializeApp} from 'firebase/app';
 import AdminBubble from './AdminBubble';
+import ThemeBackground from './ThemeBackground';
 
 import {
   getAuth,
@@ -444,6 +445,15 @@ useEffect(() => {
           '--gap': data.gap + 'px'
         }}
       >
+
+       <ThemeBackground
+          color={data.accent}
+          disabled={
+            mode === 'admin' ||
+            mode === 'unlock' ||
+            Boolean(selected) ||
+            Boolean(view)}/>
+
         <header id="home">
           <nav className={navCompact ? 'nav-compact' : ''}>
             <a href="#home" className="home-link">หน้าแรก</a>
@@ -459,7 +469,7 @@ useEffect(() => {
                   {data.brand}
                 </span>
               </span>
-                  
+
               <span className="navbar-logo-wrap" aria-hidden="true">
                 <img
                   className="navbar-logo"

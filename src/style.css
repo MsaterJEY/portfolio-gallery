@@ -551,3 +551,46 @@ header#home nav.nav-compact .navbar-logo-wrap {
     filter: none;
   }
 }
+
+/* แยกพื้นหลังออกจากเนื้อหา */
+.site {
+  position: relative;
+  isolation: isolate;
+  background: #030705;
+}
+
+/* พื้นหลังติดกับหน้าจอและไม่ขวางการกด */
+.site-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+
+  background: radial-gradient(
+    ellipse at 50% 25%,
+    #102719 0%,
+    #030705 70%
+  );
+}
+
+/* ลดความเด่นของเส้น เพื่อให้อ่านเนื้อหาได้ชัด */
+.site-background canvas {
+  display: block;
+  opacity: 0.5;
+}
+
+/* เพิ่มความมืดบริเวณเนื้อหาด้านล่าง */
+.site-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background: linear-gradient(
+    180deg,
+    rgba(3, 7, 5, 0.2),
+    rgba(3, 7, 5, 0.6) 60%,
+    rgba(3, 7, 5, 0.82)
+  );
+}
