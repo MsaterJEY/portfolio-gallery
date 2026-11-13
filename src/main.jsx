@@ -2,6 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {trackSiteVisit} from './visit-session';
 import {createRoot} from 'react-dom/client';
 import {initializeApp} from 'firebase/app';
+import AdminBubble from './AdminBubble';
 
 import {
   getAuth,
@@ -127,6 +128,7 @@ function App() {
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState('');
   const [bubble, setBubble] = useState(false);
+  const [adminSession, setAdminSession] = useState(false);
   const [online, setOnline] = useState(false);
   const [navCompact, setNavCompact] = useState(false);
 
@@ -210,39 +212,42 @@ useEffect(() => {
   );
 }, []);
   
-  useEffect(() => {
-    if (!auth) return;
-  
-    let requestId = 0;
-  
-    const unsubscribe = auth.onAuthStateChanged(async currentUser => {
-      const currentRequest = ++requestId;
-    
-      setBubble(false);
-    
-      if (!currentUser) return;
-    
-      try {
-        const token = await currentUser.getIdToken();
-      
-        // ตรวจสิทธิ์ผู้ดูแลกับเซิร์ฟเวอร์ก่อนแสดง bubble
-        await api('admin', null, token);
-      
-        if (currentRequest === requestId) {
-          setBubble(true);
-        }
-      } catch {
-        if (currentRequest === requestId) {
-          setBubble(false);
-        }
+useEffect(() => {
+  if (!auth) return;
+
+  let requestId = 0;
+
+  const unsubscribe = auth.onAuthStateChanged(async currentUser => {
+    const currentRequest = ++requestId;
+
+    setAdminSession(false);
+    setBubble(false);
+
+    if (!currentUser) return;
+
+    try {
+      const token = await currentUser.getIdToken();
+
+      // ตรวจสิทธิ์ผู้ดูแลจากเซิร์ฟเวอร์
+      await api('admin', null, token);
+
+      if (currentRequest === requestId) {
+        setAdminSession(true);
+        setBubble(true);
       }
-    });
-  
-    return () => {
-      requestId++;
-      unsubscribe();
-    };
-  }, []);
+    } catch {
+      if (currentRequest === requestId) {
+        setAdminSession(false);
+        setBubble(false);
+      }
+    }
+  });
+
+  return () => {
+    requestId++;
+    unsubscribe();
+  };
+}, []);
 
   function track(project, kind) {
     if (configured) {
@@ -295,7 +300,7 @@ useEffect(() => {
       readAdminGraceUntil()
     );
 
-    if (Date.now() < until) {
+    if (adminSession || Date.now() < until) {
       setMode('');
       setSecret('');
       setError('');
@@ -314,7 +319,7 @@ useEffect(() => {
   return () => {
     window.removeEventListener('keydown', key);
   };
-}, [shortcut]);
+}, [shortcut, adminSession]);
 
   useEffect(() => {
     document.body.style.overflow = mode || selected || view ? 'hidden' : '';
@@ -528,8 +533,8 @@ useEffect(() => {
 
           <section id="contact">
             <span className="eyebrow">Contact</span>
-            <h2>มาสร้างสิ่งดี ๆ <em>ด้วยกัน</em></h2>
-            <p>พร้อมคุยงานใหม่ ๆ ทักมาได้ที่ช่องทางด้านล่าง</p>
+            <h2>ช่องทางการ<em>ติดต่องาน</em></h2>
+            <p>พร้อมคุยงานใหม่ ๆ ติดต่อมาได้ที่ช่องทางด้านล่าง</p>
             <div className="contact-links">
             {phoneDigits && (
               <a
@@ -671,28 +676,18 @@ useEffect(() => {
         </div>
       )}
 
-      {bubble && (
-        <button
-          className="bubble"
-          aria-label="เปิด Admin panel"
-          onClick={() => setMode('admin')}
-        >✦</button>
-      )}
-
+      {bubble && (<AdminBubble onOpen={() => setMode('admin')}/>)}
+        
       {mode === 'admin' && (
-  <Admin
-    data={data}
-    configured={configured}
-    onLogout={logoutAdmin}
-    onClose={() => {
-      setMode('');
-      history.replaceState(history.state, '', '/');
-    }}
-  />
-)}
-    </>
-  );
-}
+      <Admin
+        data={data}
+        configured={configured}
+        onLogout={logoutAdmin}
+        onClose={() => {
+          setMode('');
+          history.replaceState(history.state, '', '/');
+        }}/>
+      )}</>);}
 
 function Admin({data, configured, onClose, onLogout}) {
   const [draft, setDraft] = useState(structuredClone(data));

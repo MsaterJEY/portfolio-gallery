@@ -381,3 +381,14 @@ header#home nav .nav-work-trigger {
 .contact-icon svg {
   display: block;
 }
+
+.draggable-admin-bubble {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.draggable-admin-bubble.is-dragging {
+  cursor: grabbing;
+}
