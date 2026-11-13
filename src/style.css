@@ -425,3 +425,38 @@ header#home nav .nav-work-trigger {
   opacity: 1;
   transform: translate(-50%, 0);
 }
+
+header#home > nav.nav-compact > .brand {
+  justify-content: center;
+  align-items: center;
+}
+
+.navbar-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.navbar-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+
+  /* ชดเชยพื้นที่ว่างรอบรูปโลโก้ */
+  transform: scale(1.35);
+
+  /* กลืนพื้นดำของรูปเข้ากับแถบเมนู */
+  mix-blend-mode: screen;
+}
+
+@media (max-width: 600px) {
+  .navbar-logo-wrap {
+    width: 42px;
+    height: 42px;
+  }
+}
