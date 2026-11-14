@@ -4,7 +4,7 @@ import {createRoot} from 'react-dom/client';
 import {initializeApp} from 'firebase/app';
 import AdminBubble from './AdminBubble';
 import ThemeBackground from './ThemeBackground';
-
+import ScrollEffects from './ScrollEffects';
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -446,7 +446,17 @@ useEffect(() => {
         }}
       >
 
-       <ThemeBackground
+      <ScrollEffects
+        contentKey={JSON.stringify(data)}
+        disabled={
+          mode === 'admin' ||
+          mode === 'unlock' ||
+          Boolean(selected) ||
+          Boolean(view)
+        }
+      />
+
+      <ThemeBackground
           color={data.accent}
           disabled={
             mode === 'admin' ||
