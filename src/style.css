@@ -594,3 +594,15 @@ header#home nav.nav-compact .navbar-logo-wrap {
     rgba(3, 7, 5, 0.82)
   );
 }
+
+@media (max-width: 600px) {
+  header#home > nav.nav-compact > .navbar-brand {
+    justify-self: start;
+    justify-items: start;
+    justify-content: start;
+  }
+
+  header#home > nav.nav-compact .navbar-logo-wrap {
+    justify-self: start;
+  }
+}
