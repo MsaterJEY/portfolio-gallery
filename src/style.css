@@ -603,3 +603,43 @@ header#home nav.nav-compact .navbar-logo-wrap {
     justify-self: start;
   }
 }
+
+/* ขยายพื้นที่ส่วนหัวเว็บ */
+header#home {
+  box-sizing: border-box;
+  height: auto;
+  min-height: 90svh;
+  padding-top: 88px;
+  padding-bottom: 40px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* จัดข้อความให้อยู่กึ่งกลางพื้นที่ */
+header#home > .hero-copy {
+  width: 100%;
+  margin: auto 0;
+  padding: 48px 24px;
+}
+
+/* วางปุ่มเลื่อนใต้ข้อความโดยไม่ทับกัน */
+header#home > .scroll {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+}
+
+/* มือถือ */
+@media (max-width: 600px) {
+  header#home {
+    min-height: 85svh;
+    padding-top: 75px;
+    padding-bottom: 28px;
+  }
+
+  header#home > .hero-copy {
+    padding: 40px 20px;
+  }
+}
