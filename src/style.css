@@ -438,7 +438,7 @@ header#home > nav.nav-compact > .brand {
   width: 48px;
   height: 48px;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .navbar-logo {
@@ -446,11 +446,8 @@ header#home > nav.nav-compact > .brand {
   width: 100%;
   height: 100%;
   object-fit: contain;
-
-  /* ชดเชยพื้นที่ว่างรอบรูปโลโก้ */
-  transform: scale(1.35);
-
-  /* กลืนพื้นดำของรูปเข้ากับแถบเมนู */
+  object-position: center;
+  transform: none;
   mix-blend-mode: screen;
 }
 
@@ -596,13 +593,13 @@ header#home nav.nav-compact .navbar-logo-wrap {
 }
 
 @media (max-width: 600px) {
-  header#home > nav.nav-compact > .navbar-brand {
+  header#home > nav > .navbar-brand {
     justify-self: start;
     justify-items: start;
     justify-content: start;
   }
 
-  header#home > nav.nav-compact .navbar-logo-wrap {
+  header#home > nav .navbar-logo-wrap {
     justify-self: start;
   }
 }
