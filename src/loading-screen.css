@@ -1,0 +1,94 @@
+.wg-loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #030705;
+  color: #ccffdc;
+  opacity: 1;
+  transition: opacity 450ms ease;
+}
+
+.wg-loading-screen.is-leaving {
+  opacity: 0;
+}
+
+.wg-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.wg-loading-content p {
+  margin: 0;
+  color: #a0b7a8;
+  font-family: inherit;
+  font-size: 14px;
+  text-align: center;
+}
+
+.wg-loading-tiles {
+  width: 94px;
+  height: 94px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 6px;
+  animation: wg-loading-rotate 10s linear infinite;
+}
+
+.wg-loading-tiles span {
+  background: #ccffdc;
+  border-radius: 10px;
+  animation: wg-loading-assemble 1.6s ease-in-out infinite;
+}
+
+.wg-loading-tiles span:nth-child(2) {
+  border-top-left-radius: 26px;
+  animation-delay: 0.2s;
+}
+
+.wg-loading-tiles span:nth-child(3) {
+  border-bottom-right-radius: 26px;
+  animation-delay: 0.6s;
+}
+
+.wg-loading-tiles span:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+@keyframes wg-loading-rotate {
+  from {
+    transform: rotate(-7deg);
+  }
+
+  to {
+    transform: rotate(353deg);
+  }
+}
+
+@keyframes wg-loading-assemble {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.8) translateY(4px);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wg-loading-screen {
+    transition: none;
+  }
+
+  .wg-loading-tiles,
+  .wg-loading-tiles span {
+    animation: none;
+  }
+}

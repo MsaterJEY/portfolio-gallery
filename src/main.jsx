@@ -5,6 +5,7 @@ import {initializeApp} from 'firebase/app';
 import AdminBubble from './AdminBubble';
 import ThemeBackground from './ThemeBackground';
 import ScrollEffects from './ScrollEffects';
+import LoadingScreen from './LoadingScreen';
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -118,6 +119,7 @@ function ContactIcon({kind}) {
 
 function App() {
   const [data, setData] = useState(initial);
+  const [dataReady, setDataReady] = useState(false);
   const [shortcut, setShortcut] = useState('');
   const [mode, setMode] = useState(
     location.pathname === '/admin' ? 'admin' : ''
@@ -227,11 +229,14 @@ async function logoutAdmin() {
     async function load() {
       try {
         const result = await api('public');
+      
         setData(result.content || initial);
         setShortcut(result.shortcut || '');
         setOnline(true);
       } catch {
         setOnline(false);
+      } finally {
+        setDataReady(true);
       }
     }
     load();
@@ -445,7 +450,7 @@ useEffect(() => {
           '--gap': data.gap + 'px'
         }}
       >
-
+      <LoadingScreen ready={dataReady} />
       <ScrollEffects
         contentKey={JSON.stringify(data)}
         disabled={
