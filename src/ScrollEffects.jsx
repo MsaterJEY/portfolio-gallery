@@ -99,7 +99,7 @@ export default function ScrollEffects({
                   0
                 ],
 
-                duration: 600,
+                duration: 1000,
                 ease: 'out(3)'
               });
 
