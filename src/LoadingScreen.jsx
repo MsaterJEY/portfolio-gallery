@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './loading-screen.css';
 
 export default function LoadingScreen({ ready = false }) {
