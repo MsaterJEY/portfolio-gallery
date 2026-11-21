@@ -1,11 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {trackSiteVisit} from './visit-session';
 import {createRoot} from 'react-dom/client';
 import {initializeApp} from 'firebase/app';
-import AdminBubble from './AdminBubble';
-import ThemeBackground from './ThemeBackground';
-import ScrollEffects from './ScrollEffects';
-import LoadingScreen from './LoadingScreen';
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -15,8 +10,6 @@ import {
 } from 'firebase/auth';
 import {initial, safeUrl} from './data';
 import './style.css';
-import ProjectManager from './ProjectManager';
-import WorkMenu from './WorkMenu';
 
 const configured = !!import.meta.env.VITE_FIREBASE_API_KEY;
 
@@ -82,44 +75,8 @@ function readAdminGraceUntil() {
   }
 }
 
-function ContactIcon({kind}) {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.7"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {kind === 'phone' && (
-        <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.8 2.1Z"/>
-      )}
-
-      {kind === 'email' && (
-        <>
-          <rect x="3" y="5" width="18" height="14" rx="3"/>
-          <path d="m3 7 9 6 9-6"/>
-        </>
-      )}
-
-      {kind === 'instagram' && (
-        <>
-          <rect x="3" y="3" width="18" height="18" rx="5"/>
-          <circle cx="12" cy="12" r="4"/>
-          <circle cx="17.5" cy="6.5" r=".7" fill="currentColor" stroke="none"/>
-        </>
-      )}
-    </svg>
-  );
-}
-
 function App() {
   const [data, setData] = useState(initial);
-  const [dataReady, setDataReady] = useState(false);
   const [shortcut, setShortcut] = useState('');
   const [mode, setMode] = useState(
     location.pathname === '/admin' ? 'admin' : ''
@@ -131,64 +88,7 @@ function App() {
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState('');
   const [bubble, setBubble] = useState(false);
-  const [copyMessage, setCopyMessage] = useState('');
-
-  async function copyEmailAddress() {
-    if (!data.email) return;
-
-    clearTimeout(copyTimer.current);
-
-    try {
-      await navigator.clipboard.writeText(data.email);
-      setCopyMessage('คัดลอกสำเร็จ');
-    } catch {
-      setCopyMessage('คัดลอกไม่สำเร็จ กรุณาลองอีกครั้ง');
-    }
-
-    copyTimer.current = setTimeout(() => {
-      setCopyMessage('');
-    }, 2500);
-  }
-    const copyTimer = useRef(null);
-
-  useEffect(() => {
-    return () => clearTimeout(copyTimer.current);
-  }, []);
-
-  async function copyPhoneNumber() {
-    clearTimeout(copyTimer.current);
-
-    try {
-      await navigator.clipboard.writeText(phoneText);
-      setCopyMessage('คัดลอกสำเร็จ');
-    } catch {
-      setCopyMessage('คัดลอกไม่สำเร็จ กรุณาลองอีกครั้ง');
-    }
-
-    copyTimer.current = setTimeout(() => {
-      setCopyMessage('');
-    }, 2500);
-  }
-  const [adminSession, setAdminSession] = useState(false);
   const [online, setOnline] = useState(false);
-  const [navCompact, setNavCompact] = useState(false);
-
-    useEffect(() => {
-      function handleScroll() {
-        setNavCompact(window.scrollY > 80);
-      }
-    
-      handleScroll();
-    
-      window.addEventListener('scroll', handleScroll, {
-        passive: true
-      });
-    
-      return () => {
-        window.removeEventListener('scroll', handleScroll);
-      };
-    }, []);
-
   const input = useRef(null);
   const opener = useRef(null);
 
@@ -219,7 +119,7 @@ async function logoutAdmin() {
     setError('');
     setAttempt(0);
 
-    history.replaceState(history.state, '', '/');
+    history.replaceState({}, '', '/');
   } catch {
     window.alert('ออกจากระบบไม่สำเร็จ กรุณาลองใหม่');
   }
@@ -229,14 +129,11 @@ async function logoutAdmin() {
     async function load() {
       try {
         const result = await api('public');
-      
         setData(result.content || initial);
         setShortcut(result.shortcut || '');
         setOnline(true);
       } catch {
         setOnline(false);
-      } finally {
-        setDataReady(true);
       }
     }
     load();
@@ -244,54 +141,51 @@ async function logoutAdmin() {
     return () => clearInterval(interval);
   }, []);
 
-useEffect(() => {
-  if (!configured) return;
+  useEffect(() => {
+    if (!configured) return;
 
-  return trackSiteVisit((visitor, visitId) =>
-    api('event', {
-      kind: 'visit',
-      visitor,
-      visitId
-    })
-  );
-}, []);
-  
-useEffect(() => {
-  if (!auth) return;
-
-  let requestId = 0;
-
-  const unsubscribe = auth.onAuthStateChanged(async currentUser => {
-    const currentRequest = ++requestId;
-
-    setAdminSession(false);
-    setBubble(false);
-
-    if (!currentUser) return;
-
-    try {
-      const token = await currentUser.getIdToken();
-
-      // ตรวจสิทธิ์ผู้ดูแลจากเซิร์ฟเวอร์
-      await api('admin', null, token);
-
-      if (currentRequest === requestId) {
-        setAdminSession(true);
-        setBubble(true);
-      }
-    } catch {
-      if (currentRequest === requestId) {
-        setAdminSession(false);
-        setBubble(false);
-      }
+    let visitor = localStorage.getItem('gallery-visitor');
+    if (!visitor) {
+      visitor = crypto.randomUUID();
+      localStorage.setItem('gallery-visitor', visitor);
     }
-  });
 
-  return () => {
-    requestId++;
-    unsubscribe();
-  };
-}, []);
+    api('event', {kind: 'visit', visitor}).catch(() => {});
+  }, []);
+  
+  useEffect(() => {
+    if (!auth) return;
+  
+    let requestId = 0;
+  
+    const unsubscribe = auth.onAuthStateChanged(async currentUser => {
+      const currentRequest = ++requestId;
+    
+      setBubble(false);
+    
+      if (!currentUser) return;
+    
+      try {
+        const token = await currentUser.getIdToken();
+      
+        // ตรวจสิทธิ์ผู้ดูแลกับเซิร์ฟเวอร์ก่อนแสดง bubble
+        await api('admin', null, token);
+      
+        if (currentRequest === requestId) {
+          setBubble(true);
+        }
+      } catch {
+        if (currentRequest === requestId) {
+          setBubble(false);
+        }
+      }
+    });
+  
+    return () => {
+      requestId++;
+      unsubscribe();
+    };
+  }, []);
 
   function track(project, kind) {
     if (configured) {
@@ -344,7 +238,7 @@ useEffect(() => {
       readAdminGraceUntil()
     );
 
-    if (adminSession || Date.now() < until) {
+    if (Date.now() < until) {
       setMode('');
       setSecret('');
       setError('');
@@ -363,7 +257,7 @@ useEffect(() => {
   return () => {
     window.removeEventListener('keydown', key);
   };
-}, [shortcut, adminSession]);
+}, [shortcut]);
 
   useEffect(() => {
     document.body.style.overflow = mode || selected || view ? 'hidden' : '';
@@ -422,17 +316,6 @@ useEffect(() => {
     track(project, 'detail');
   }
 
-  const phoneText = (data.phone || '').trim();
-  const phoneDigits = phoneText.replace(/\D/g, '');
-  
-  const instagramName = (data.instagram || '')
-    .trim()
-    .replace(/^@/, '');
-  
-  const validInstagram = /^[A-Za-z0-9._]{1,30}$/.test(
-    instagramName
-  );
-
   const visible = data.projects.filter(project => project.visible);
   const categories = [
     'ทั้งหมด',
@@ -450,54 +333,12 @@ useEffect(() => {
           '--gap': data.gap + 'px'
         }}
       >
-      <LoadingScreen ready={dataReady} />
-      <ScrollEffects
-        contentKey={JSON.stringify(data)}
-        disabled={
-          mode === 'admin' ||
-          mode === 'unlock' ||
-          Boolean(selected) ||
-          Boolean(view)
-        }
-      />
-
-      <ThemeBackground
-          color={data.accent}
-          disabled={
-            mode === 'admin' ||
-            mode === 'unlock' ||
-            Boolean(selected) ||
-            Boolean(view)}/>
-
         <header id="home">
-          <nav className={navCompact ? 'nav-compact' : ''}>
+          <nav>
             <a href="#home" className="home-link">หน้าแรก</a>
-
-            <a
-              className="brand navbar-brand"
-              href="#home"
-              aria-label={data.brand + ' — กลับหน้าแรก'}
-            >
-              <span className="navbar-brand-text" aria-hidden="true">
-                <i/>
-                <span className="navbar-brand-name">
-                  {data.brand}
-                </span>
-              </span>
-
-              <span className="navbar-logo-wrap" aria-hidden="true">
-                <img
-                  className="navbar-logo"
-                  src="/images/wg-logo.png"
-                  alt=""
-                  width="48"
-                  height="48"
-                />
-              </span>
-            </a>
-
+            <a className="brand" href="#home"><i/>{data.brand}</a>
             <div>
-              <WorkMenu onShowAll={() => setFilter('ทั้งหมด')}/>
+              <a href="#work">ผลงาน</a>
               <a href="#about">เกี่ยวกับ</a>
               <a href="#contact">ติดต่อ</a>
             </div>
@@ -527,7 +368,7 @@ useEffect(() => {
                   ผลงานที่ทำเสร็จ
                   <span>
                     {' / ' + String(
-                      visible.filter(project => project.featured && project.status === 'เสร็จแล้ว').length
+                      visible.filter(project => project.featured).length
                     ).padStart(2, '0')}
                   </span>
                 </h2>
@@ -562,7 +403,7 @@ useEffect(() => {
             </div>
           </section>
 
-          <section id="all-projects" className="all-projects">
+          <section className="all-projects">
             <div className="section-heading">
               <div>
                 <span className="eyebrow">All projects</span>
@@ -581,14 +422,14 @@ useEffect(() => {
               </div>
             </div>
 
-          <div className="all-projects-scroll" tabIndex={0} role="region"aria-label="รายการผลงาน เลื่อนเพื่อดูเพิ่มเติม">
             {visible.filter(project =>
               filter === 'ทั้งหมด' || project.category === filter
             ).map((project, index) => (
               <button
                 key={project.id}
                 className="project-row"
-                onClick={event => openDetail(project, event.currentTarget)}>
+                onClick={event => openDetail(project, event.currentTarget)}
+              >
                 <span className="muted">
                   {String(index + 1).padStart(2, '0')}
                 </span>
@@ -596,16 +437,12 @@ useEffect(() => {
                 <span className="category">{project.category}</span>
                 <span className={
                   'status ' + (project.status === 'เสร็จแล้ว' ? 'done' : '')
-                }>
-                  ● {project.status}
-                </span>
-              
+                }>● {project.status}</span>
                 <span>↗</span>
               </button>
             ))}
-          </div>
-
           </section>
+
           <section id="about" className="about">
             <div>
               <span className="eyebrow">About</span>
@@ -616,48 +453,11 @@ useEffect(() => {
 
           <section id="contact">
             <span className="eyebrow">Contact</span>
-            <h2>ช่องทางการ<em>ติดต่องาน</em></h2>
-            <p>พร้อมคุยงานใหม่ ๆ ติดต่อมาได้ที่ช่องทางด้านล่าง</p>
-            <div className="contact-links">
-            {phoneDigits && (
-              <button
-                type="button"
-                className="contact-icon"
-                onClick={copyPhoneNumber}
-                aria-label={'คัดลอกเบอร์โทร ' + phoneText}
-                title={'คัดลอกเบอร์โทร ' + phoneText}><ContactIcon kind="phone"/>
-              </button>
-            )}
-
-            {data.email && (
-              <button
-                type="button"
-                className="contact-icon"
-                aria-label={'คัดลอกอีเมล ' + data.email}
-                title={'คัดลอกอีเมล ' + data.email}
-                onClick={copyEmailAddress}
-              >
-                <ContactIcon kind="email"/>
-              </button>
-            )}
-
-            {validInstagram && (
-              <a
-                className="contact-icon"
-                href={
-                  'https://www.instagram.com/' +
-                  encodeURIComponent(instagramName) +
-                  '/'
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={'Instagram @' + instagramName}
-                title={'Instagram @' + instagramName}
-              >
-                <ContactIcon kind="instagram"/>
-              </a>
-            )}
-          </div>
+            <h2>มาสร้างสิ่งดี ๆ <em>ด้วยกัน</em></h2>
+            <p>พร้อมคุยงานใหม่ ๆ ทักมาได้ที่ช่องทางด้านล่าง</p>
+            <a className="email" href={'mailto:' + data.email}>
+              {data.email} ↗
+            </a>
           </section>
         </main>
 
@@ -669,18 +469,6 @@ useEffect(() => {
           </span>
           <a href="#home">กลับด้านบน ↑</a>
         </footer>
-      </div>
-
-      <div
-        className={
-          'contact-toast' +
-          (copyMessage ? ' is-visible' : '')
-        }
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {copyMessage}
       </div>
 
       {selected && (
@@ -771,18 +559,28 @@ useEffect(() => {
         </div>
       )}
 
-      {bubble && (<AdminBubble onOpen={() => setMode('admin')}/>)}
+      {bubble && (
+        <button
+          className="bubble"
+          aria-label="เปิด Admin panel"
+          onClick={() => setMode('admin')}
+        >✦</button>
+      )}
 
       {mode === 'admin' && (
-      <Admin
-        data={data}
-        configured={configured}
-        onLogout={logoutAdmin}
-        onClose={() => {
-          setMode('');
-          history.replaceState(history.state, '', '/');
-        }}/>
-      )}</>);}
+  <Admin
+    data={data}
+    configured={configured}
+    onLogout={logoutAdmin}
+    onClose={() => {
+      setMode('');
+      history.replaceState({}, '', '/');
+    }}
+  />
+)}
+    </>
+  );
+}
 
 function Admin({data, configured, onClose, onLogout}) {
   const [draft, setDraft] = useState(structuredClone(data));
@@ -792,6 +590,7 @@ function Admin({data, configured, onClose, onLogout}) {
   const [stats, setStats] = useState(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [edit, setEdit] = useState(-1);
   const [hotkey, setHotkey] = useState('Ctrl+Shift+K');
   const [code, setCode] = useState('');
   const [savedState, setSavedState] = useState(null);
@@ -889,6 +688,7 @@ function cancelChanges() {
   setCode('');
   setCategoryName('');
   setEditingCategory(null);
+  setEdit(-1);
   setMessage('ยกเลิกการแก้ไขแล้ว');
 }
 
@@ -985,12 +785,30 @@ function cancelChanges() {
   }
 }
 
+  function updateProject(index, key, value) {
+    setDraft(previous => ({
+      ...previous,
+      projects: previous.projects.map((project, current) =>
+        current === index ? {...project, [key]: value} : project
+      )
+    }));
+  }
+
+  function moveProject(index, direction) {
+    const projects = [...draft.projects];
+    const target = index + direction;
+    if (target < 0 || target >= projects.length) return;
+    [projects[index], projects[target]] = [projects[target], projects[index]];
+    setDraft({...draft, projects});
+    setEdit(-1);
+  }
+
   const field = (key, label, type = 'text') => (
     <label>
       {label}
       <input
         type={type}
-        value={draft[key] ?? ''}
+        value={draft[key]}
         onChange={event => setDraft({...draft, [key]: event.target.value})}
       />
     </label>
@@ -1010,52 +828,82 @@ function cancelChanges() {
     security: 'การเข้าถึงแอดมิน'
   };
   
-  async function uploadCover(file) {
-    if (!file) throw Error('กรุณาเลือกรูป');
-
+  async function uploadCover(index, file) {
+    if (!file) return;
+  
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      throw Error('รองรับ JPG, PNG และ WebP เท่านั้น');
+      setMessage('รองรับ JPG, PNG และ WebP เท่านั้น');
+      return;
     }
-
+  
     if (file.size > 5 * 1024 * 1024) {
-      throw Error('รูปต้องมีขนาดไม่เกิน 5 MB');
+      setMessage('รูปต้องมีขนาดไม่เกิน 5 MB');
+      return;
     }
-
+  
     if (!auth?.currentUser) {
-      throw Error('กรุณาเข้าสู่ระบบก่อนอัปโหลด');
+      setMessage('กรุณาเข้าสู่ระบบก่อนอัปโหลด');
+      return;
     }
-
+  
+    const projectId = draft.projects[index].id;
+  
     setBusy(true);
-
+    setMessage('กำลังอัปโหลดรูป…');
+  
     try {
       const token = await auth.currentUser.getIdToken();
-      const permission = await api('upload-signature', {}, token);
+    
+      const permission = await api(
+        'upload-signature',
+        {},
+        token
+      );
+    
       const form = new FormData();
-
+    
       form.append('file', file);
       form.append('api_key', permission.apiKey);
       form.append('timestamp', String(permission.timestamp));
       form.append('folder', permission.folder);
       form.append('allowed_formats', permission.allowedFormats);
       form.append('signature', permission.signature);
-
+    
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${permission.cloudName}/image/upload`,
-        {method: 'POST', body: form}
+        {
+          method: 'POST',
+          body: form
+        }
       );
-
+    
       const result = await response.json();
-
+    
       if (!response.ok || !result.secure_url) {
-        throw Error(result.error?.message || 'อัปโหลดรูปไม่สำเร็จ');
+        throw Error(
+          result.error?.message || 'อัปโหลดรูปไม่สำเร็จ'
+        );
       }
-
-      return result.secure_url;
+    
+      setDraft(previous => ({
+        ...previous,
+        projects: previous.projects.map(project =>
+          project.id === projectId
+            ? {...project, cover: result.secure_url}
+            : project
+        )
+      }));
+    
+      setMessage(
+        'อัปโหลดแล้ว กดยืนยันและรีเฟรชเพื่อเผยแพร่ภาพปก'
+      );
+    } catch (error) {
+      setMessage(error.message);
     } finally {
       setBusy(false);
     }
   }
-
+  
   return (
     <div className="admin-shell">
       <aside>
@@ -1090,41 +938,12 @@ function cancelChanges() {
     </div>
       </aside>
       <div className="admin-main">
-        <div className="section-heading admin-heading">
-          <div className="admin-heading-text">
+        <div className="section-heading">
+          <div>
             <span className="eyebrow">PORTFOLIO MANAGEMENT</span>
             <h2>{heading[tab]}</h2>
-          </div>    
-          {allowed && hasChanges && (
-            <div className="admin-mobile-actions">
-              <button
-                type="button"
-                className="mobile-save"
-                disabled={busy}
-                onClick={save}
-              >
-                {busy ? 'กำลังดำเนินการ…' : 'ยืนยันและรีเฟรช ↗'}
-              </button>
-          
-              <button
-                type="button"
-                className="mobile-cancel"
-                disabled={busy}
-                onClick={cancelChanges}
-              >
-                ยกเลิก
-              </button>
-            </div>
-          )}
-
-          <button
-            type="button"
-            className="admin-close"
-            onClick={onClose}
-            aria-label="ปิดแอดมิน"
-          >
-            ×
-          </button>
+          </div>
+          <button onClick={onClose} aria-label="ปิดแอดมิน">×</button>
         </div>
 
         {message && <p role="alert" className="notice">{message}</p>}
@@ -1215,20 +1034,239 @@ function cancelChanges() {
               </>
             )}
 
-{tab === 'projects' && (
-  <ProjectManager
-    projects={draft.projects}
-    categories={categoryOptions}
-    busy={busy}
-    Art={Art}
-    onUpload={uploadCover}
-    onChange={(projects, categories) => setDraft(previous => ({
-      ...previous,
-      projects,
-      categories
-    }))}
-  />
-)}
+            {tab === 'projects' && (
+              <>
+              <div className="panel">
+                <h3>จัดการหมวดหมู่</h3>                    
+                <div className="category-editor">
+                  <input
+                    aria-label="ชื่อหมวดหมู่"
+                    placeholder="ชื่อหมวดหมู่"
+                    maxLength={80}
+                    value={categoryName}
+                    disabled={busy}
+                    onChange={event => setCategoryName(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        saveCategory();
+                      }
+                    }}
+                  />              
+
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={busy || !categoryName.trim()}
+                    onClick={saveCategory}
+                  >
+                    {editingCategory === null ? '+ เพิ่มหมวดหมู่' : 'ยืนยันชื่อ'}
+                  </button>             
+                  
+                  {editingCategory !== null && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => {
+                        setCategoryName('');
+                        setEditingCategory(null);
+                      }}
+                    >ยกเลิกแก้ชื่อ</button>
+                  )}
+                </div>              
+                
+                <div className="category-list">
+                  {categoryOptions.map(category => (
+                    <div className="category-item" key={category}>
+                      <span>{category}</span>             
+                  
+                      <div className="actions">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => {
+                            setEditingCategory(category);
+                            setCategoryName(category);
+                          }}
+                        >แก้ไข</button>             
+                        
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => deleteCategory(category)}
+                        >ลบ</button>
+                      </div>
+                    </div>
+                  ))}             
+
+                  {categoryOptions.length === 0 && (
+                    <p>ยังไม่มีหมวดหมู่ เพิ่มหมวดหมู่ก่อนเลือกให้ผลงาน</p>
+                  )}
+                </div>              
+                
+                <p className="muted">
+                  การเพิ่ม ลบ และแก้ชื่อจะบันทึกลงฐานข้อมูล
+                  เมื่อกดปุ่มยืนยันและรีเฟรชด้านซ้าย
+                </p>
+              </div>
+                <button className="primary" onClick={() => {
+                  setDraft({
+                    ...draft,
+                    projects: [...draft.projects, {
+                      id: crypto.randomUUID(),
+                      title: 'โปรเจกต์ใหม่',
+                      description: '',
+                      category: categoryOptions[0] || '',
+                      year: String(new Date().getFullYear()),
+                      status: 'กำลังทำ',
+                      url: '',
+                      cover: '',
+                      art: 'rings',
+                      visible: true,
+                      featured: true
+                    }]
+                  });
+                  setEdit(draft.projects.length);
+                }}>+ เพิ่มผลงาน</button>
+
+                {draft.projects.map((project, index) => (
+                  <div className="panel" key={project.id}>
+                    <div className="section-heading">
+                      <h3>{index + 1}. {project.title}</h3>
+                      <div className="actions">
+                        <button
+                          disabled={index === 0}
+                          onClick={() => moveProject(index, -1)}
+                        >↑</button>
+                        <button
+                          disabled={index === draft.projects.length - 1}
+                          onClick={() => moveProject(index, 1)}
+                        >↓</button>
+                        <button onClick={() => setEdit(
+                          edit === index ? -1 : index
+                        )}>แก้ไข</button>
+                        <button onClick={() => {
+                          if (confirm('ลบผลงานนี้?')) {
+                            setDraft({
+                              ...draft,
+                              projects: draft.projects.filter(
+                                item => item.id !== project.id
+                              )
+                            });
+                            setEdit(-1);
+                          }
+                        }}>ลบ</button>
+                      </div>
+                    </div>
+
+                    {edit === index && (
+                      <div className="form-grid">
+                        <label>
+                          หมวดหมู่
+                          <select value={project.category} disabled={busy} onChange={event => updateProject(index, 'category', event.target.value)}>
+                            <option value="" disabled>เลือกหมวดหมู่</option>
+                          
+                            {categoryOptions.map(category => (
+                              <option key={category} value={category}>
+                                {category}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        
+                        <label>
+                          ภาพปกผลงาน
+                          <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy}
+                            onChange={event => {
+                              const file = event.target.files?.[0];
+                              event.target.value = '';
+                              uploadCover(index, file);
+                            }}
+                          />
+
+                          <small>JPG, PNG หรือ WebP ขนาดไม่เกิน 5 MB</small>
+                          
+                          {project.cover && (
+                            <>
+                              <img
+                                src={safeUrl(project.cover)}
+                                alt="ตัวอย่างภาพปก"
+                                style={{
+                                  width: '100%',
+                                  maxHeight: '220px',
+                                  objectFit: 'cover',
+                                  borderRadius: '12px'
+                                }}
+                              />
+
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => updateProject(index, 'cover', '')}
+                              >
+                                เอาภาพปกออก
+                              </button>
+                            </>
+                          )}
+                        </label>
+                        
+                        {[
+                          ['title', 'ชื่อผลงาน'],
+                          ['description', 'รายละเอียด'], 
+                          ['year', 'ปี'],
+                          ['url', 'URL เว็บไซต์ (/projects/... หรือ https://...)'],
+                        ].map(([key, label]) => (
+                          <label key={key}>
+                            {label}
+                            <input
+                              value={project[key]}
+                              onChange={event => updateProject(
+                                index, key, event.target.value
+                              )}
+                            />
+                          </label>
+                        ))}
+
+                        {[
+                          ['status', 'สถานะ', ['เสร็จแล้ว', 'กำลังทำ']],
+                          ['art', 'ภาพกราฟิก', ['rings', 'poster', 'research']]
+                        ].map(([key, label, options]) => (
+                          <label key={key}>
+                            {label}
+                            <select
+                              value={project[key]}
+                              onChange={event => updateProject(
+                                index, key, event.target.value
+                              )}
+                            >
+                              {options.map(option => (
+                                <option key={option}>{option}</option>
+                              ))}
+                            </select>
+                          </label>
+                        ))}
+
+                        {[
+                          ['visible', 'เผยแพร่'],
+                          ['featured', 'แสดงในแกลเลอรี']
+                        ].map(([key, label]) => (
+                          <label key={key} className="check">
+                            <input
+                              type="checkbox"
+                              checked={project[key]}
+                              onChange={event => updateProject(
+                                index, key, event.target.checked
+                              )}
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </>
+            )}
 
             {tab === 'appearance' && (
               <div className="panel form-grid">
@@ -1238,8 +1276,6 @@ function cancelChanges() {
                 {field('intro', 'คำเกริ่น')}
                 {field('about', 'เกี่ยวกับ')}
                 {field('email', 'อีเมลติดต่อ', 'email')}
-                {field('phone', 'เบอร์โทร เช่น 0812345678', 'tel')}
-                {field('instagram','ชื่อบัญชี Instagram — ไม่ต้องใส่ URL')}
                 {field('accent', 'สีหลัก', 'color')}
 
                 <label>
