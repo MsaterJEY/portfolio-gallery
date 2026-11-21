@@ -17,6 +17,7 @@ import {initial, safeUrl} from './data';
 import './style.css';
 import ProjectManager from './ProjectManager';
 import WorkMenu from './WorkMenu';
+import FormsManager, {PublicForms} from './Forms';
 
 const configured = !!import.meta.env.VITE_FIREBASE_API_KEY;
 
@@ -113,6 +114,19 @@ function ContactIcon({kind}) {
           <circle cx="17.5" cy="6.5" r=".7" fill="currentColor" stroke="none"/>
         </>
       )}
+        {kind === 'form' && (
+        <>
+          <rect
+            x="5"
+            y="3"
+            width="14"
+            height="18"
+            rx="2"
+          />
+          <path d="M9 7h6M11 11h4M11 15h4"/>
+          <path d="m8 11 .5.5L9.5 10M8 15h.01"/>
+        </>
+      )}
     </svg>
   );
 }
@@ -122,7 +136,7 @@ function App() {
   const [dataReady, setDataReady] = useState(false);
   const [shortcut, setShortcut] = useState('');
   const [mode, setMode] = useState(
-    location.pathname === '/admin' ? 'admin' : ''
+    location.pathname.startsWith('/admin') ? 'admin' : ''
   );
   const [selected, setSelected] = useState(null);
   const [view, setView] = useState(null);
@@ -500,6 +514,7 @@ useEffect(() => {
               <WorkMenu onShowAll={() => setFilter('ทั้งหมด')}/>
               <a href="#about">เกี่ยวกับ</a>
               <a href="#contact">ติดต่อ</a>
+              <a href="/forms">แบบฟอร์ม</a>
             </div>
           </nav>
 
@@ -657,6 +672,14 @@ useEffect(() => {
                 <ContactIcon kind="instagram"/>
               </a>
             )}
+                        <a
+              className="contact-icon"
+              href="/forms"
+              aria-label="เปิดแบบฟอร์ม"
+              title="เปิดแบบฟอร์ม"
+            >
+              <ContactIcon kind="form"/>
+            </a>
           </div>
           </section>
         </main>
@@ -788,7 +811,11 @@ function Admin({data, configured, onClose, onLogout}) {
   const [draft, setDraft] = useState(structuredClone(data));
   const [user, setUser] = useState(null);
   const [allowed, setAllowed] = useState(false);
-  const [tab, setTab] = useState('dashboard');
+  const [tab, setTab] = useState(
+    location.pathname.startsWith('/admin/forms')
+      ? 'forms'
+      : 'dashboard'
+  );
   const [stats, setStats] = useState(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -999,6 +1026,7 @@ function cancelChanges() {
   const tabs = [
     ['dashboard', 'ภาพรวม / Dashboard'],
     ['projects', 'จัดการผลงาน'],
+    ['forms', 'จัดการฟอร์ม'],
     ['appearance', 'เนื้อหาและการแสดงผล'],
     ['security', 'คีย์ลัดและรหัสลับ']
   ];
@@ -1006,6 +1034,7 @@ function cancelChanges() {
   const heading = {
     dashboard: 'ภาพรวม',
     projects: 'จัดการผลงาน',
+    forms: 'จัดการฟอร์ม',
     appearance: 'เนื้อหาและการแสดงผล',
     security: 'การเข้าถึงแอดมิน'
   };
@@ -1145,6 +1174,9 @@ function cancelChanges() {
           </form>
         ) : (
           <>
+          {tab === 'forms' && (
+            <FormsManager api={formAdminApi}/>
+          )}
             {tab === 'dashboard' && (
               <>
                 <div className="metrics">
@@ -1332,4 +1364,21 @@ function cancelChanges() {
   );
 }
 
-createRoot(document.getElementById('root')).render(<App/>);
+async function formAdminApi(path, body) {
+  if (!auth?.currentUser) {
+    throw Error('กรุณาเข้าสู่ระบบผู้ดูแล');
+  }
+
+  const token = await auth.currentUser.getIdToken();
+  return api(path, body, token);
+}
+
+const isFormsPage =
+  location.pathname === '/forms' ||
+  location.pathname.startsWith('/forms/');
+
+createRoot(document.getElementById('root')).render(
+  isFormsPage
+    ? <PublicForms api={api}/>
+    : <App/>
+);

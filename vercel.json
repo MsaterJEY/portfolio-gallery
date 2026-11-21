@@ -3,7 +3,9 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    {"source": "/admin", "destination": "/index.html"}
+    {"source": "/admin", "destination": "/index.html"},
+    {"source": "/forms/:path*", "destination": "/index.html"},
+    {"source": "/admin/forms/:path*", "destination": "/index.html"}
   ],
   "headers": [
     {

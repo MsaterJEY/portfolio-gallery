@@ -1,3 +1,4 @@
+import { handleForms } from '../lib/forms-api.js';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
@@ -107,6 +108,20 @@ export default async function handler(req, res) {
 
         return true;
       });
+    }
+  
+    if (
+      await handleForms({
+        req,
+        res,
+        db,
+        body,
+        path,
+        admin,
+        limit
+      })
+    ) {
+      return;
     }
 
     if (path === 'upload-signature' && req.method === 'POST') {
