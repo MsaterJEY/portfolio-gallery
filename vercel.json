@@ -3,9 +3,22 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    {"source": "/admin", "destination": "/index.html"},
-    {"source": "/forms/:path*", "destination": "/index.html"},
-    {"source": "/admin/forms/:path*", "destination": "/index.html"}
+    {
+      "source": "/api/forms/:path*",
+      "destination": "/api/forms?formPath=:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/forms/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/forms/:path*",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
