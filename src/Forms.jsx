@@ -24,12 +24,31 @@ const timeInput = value =>
     ? ''
     : new Date(value + 25200000).toISOString().slice(0, 16);
 
-const timeValue = value =>
-  value ? Date.parse(value + ':00+07:00') : null;
+function timeValue(value) {
+  if (!value) return null;
+
+  const separator = value.indexOf('-');
+  const enteredYear = Number(value.slice(0, separator));
+
+  const year =
+    enteredYear >= 2400 && enteredYear <= 2999
+      ? enteredYear - 543
+      : enteredYear;
+
+  const normalized =
+    String(year).padStart(4, '0') +
+    value.slice(separator);
+
+  return Date.parse(normalized + ':00+07:00');
+}
 
 function Field({
   label, value, onChange, multiline, options, ...props
 }) {
+  const dateInput = useRef(null);
+
+  const isDate = ['date', 'datetime-local'].includes(props.type);
+
   const input = {
     value,
     onChange: event => onChange(event.target.value),
@@ -40,6 +59,20 @@ function Field({
     ? options
     : Object.entries(options || {});
 
+  function openCalendar() {
+    const element = dateInput.current;
+
+    if (!element || element.disabled) return;
+
+    element.focus();
+
+    try {
+      element.showPicker?.();
+    } catch {
+      element.focus();
+    }
+  }
+
   return (
     <label>
       <span>{label}</span>
@@ -49,9 +82,24 @@ function Field({
       ) : options ? (
         <select {...input}>
           {choices.map(([id, text]) => (
-            <option key={id} value={id}>{text}</option>
+            <option key={id} value={id}>
+              {text}
+            </option>
           ))}
         </select>
+      ) : isDate ? (
+        <div className="fm-date-control">
+          <input {...input} ref={dateInput}/>
+
+          <button
+            type="button"
+            disabled={props.disabled}
+            aria-label={'เลือกวันที่ ' + label}
+            onClick={openCalendar}
+          >
+            เลือกจากปฏิทิน
+          </button>
+        </div>
       ) : (
         <input {...input}/>
       )}
