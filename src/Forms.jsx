@@ -7,6 +7,7 @@ import {
   responsesCsv
 } from '../lib/forms';
 import './forms.css';
+import Toast, {useToast} from './Toast';
 
 const statuses = {
   draft: 'ฉบับร่าง',
@@ -334,7 +335,7 @@ export default function FormsManager({api}) {
   const [preview, setPreview] = useState(false);
   const [answers, setAnswers] = useState({});
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
+  const {toast, notify, dismiss} = useToast();
 
   const lock = useRef(false);
   const dragged = useRef(null);
@@ -344,12 +345,14 @@ export default function FormsManager({api}) {
 
     lock.current = true;
     setBusy(true);
-    setMessage('');
+    dismiss();
 
     try {
       await operation();
     } catch (exception) {
-      setMessage(exception.message);
+      notify(
+      exception.message || 'ดำเนินการไม่สำเร็จ',
+      'error');
     } finally {
       lock.current = false;
       setBusy(false);
@@ -397,6 +400,61 @@ export default function FormsManager({api}) {
     change('questions', questions);
   }
 
+  function addQuestion() {
+  if (editor.questions.length >= 50) {
+    notify('เพิ่มคำถามได้สูงสุด 50 ข้อ', 'error');
+    return;
+  }
+
+  change('questions', [
+    ...editor.questions,
+    {
+      id: crypto.randomUUID(),
+      label: '',
+      type: 'text',
+      required: false
+    }
+  ]);
+
+  notify(
+    'เพิ่มคำถามแล้ว กดบันทึกเพื่อเก็บการเปลี่ยนแปลง',
+    'info'
+  );
+}
+
+function removeQuestion(id) {
+  change(
+    'questions',
+    editor.questions.filter(question => question.id !== id)
+  );
+
+  notify(
+    'นำคำถามออกแล้ว กดบันทึกเพื่อเก็บการเปลี่ยนแปลง',
+    'info'
+  );
+}
+
+async function removeForm(form) {
+  const confirmed = window.confirm(
+    'ยืนยันลบฟอร์ม “' + form.title + '” ออกจากรายการ?'
+  );
+
+  if (!confirmed) return;
+
+  await run(async () => {
+    await api('forms/admin/delete', {
+      id: form.id,
+      baseRevision: form.revision
+    });
+
+    setForms(previous =>
+      previous.filter(item => item.id !== form.id)
+    );
+
+    notify('ลบฟอร์มสำเร็จ');
+  });
+}
+
   function create() {
     setEditor({
       id: crypto.randomUUID(),
@@ -412,16 +470,22 @@ export default function FormsManager({api}) {
     });
 
     setPreview(false);
-    setMessage('');
+    notify(
+      'เริ่มสร้างฟอร์มแล้ว กดบันทึกเพื่อเก็บข้อมูล',
+      'info'
+    );
   }
 
   async function open(form) {
-    await run(async () => {
-      const result = await api('forms/admin/' + form.id);
-      setEditor(result.form);
-      setPreview(false);
-    });
-  }
+      await run(async () => {
+        const result = await api('forms/admin/' + form.id);
+
+        setEditor(result.form);
+        setPreview(false);
+
+        notify('เปิดฟอร์มเพื่อแก้ไขแล้ว', 'info');
+      });
+    }
 
   function back() {
     if (
@@ -435,7 +499,7 @@ export default function FormsManager({api}) {
 
     setEditor(null);
     setView(null);
-    setMessage('');
+    dismiss();
   }
 
   async function save(event) {
@@ -454,7 +518,11 @@ export default function FormsManager({api}) {
         ...previous.filter(form => form.id !== result.form.id)
       ]);
 
-      setMessage('บันทึกฟอร์มแล้ว');
+      notify(
+        editor.revision === 0
+            ? 'สร้างและบันทึกฟอร์มสำเร็จ'
+            : 'บันทึกการแก้ไขฟอร์มสำเร็จ'
+        );
     });
   }
 
@@ -504,15 +572,13 @@ export default function FormsManager({api}) {
       link.click();
 
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage('ส่งออกแล้ว ' + all.length + ' คำตอบ');
+      notify('ส่งออก CSV สำเร็จ ' + all.length + ' คำตอบ');
     });
   }
 
   return (
     <div className="fm-root">
-      {message && (
-        <p role="status" className="fm-notice">{message}</p>
-      )}
+      <Toast toast={toast} onClose={dismiss}/>
 
       {busy && (
         <p role="status">กำลังดำเนินการ…</p>
@@ -676,18 +742,11 @@ export default function FormsManager({api}) {
                       </button>
 
                       <button
-                        type="button"
-                        onClick={() =>
-                          change(
-                            'questions',
-                            editor.questions.filter(
-                              item => item.id !== question.id
-                            )
-                          )
-                        }
-                      >
-                        นำคำถามออก
-                      </button>
+                          type="button"
+                          onClick={() => removeQuestion(question.id)}
+                        >
+                          นำคำถามออก
+                        </button>
                     </div>
 
                     <div className="fm-grid">
@@ -751,23 +810,12 @@ export default function FormsManager({api}) {
                 ))}
 
                 <div className="fm-toolbar">
-                  <button
-                    type="button"
-                    disabled={editor.questions.length >= 50}
-                    onClick={() =>
-                      change('questions', [
-                        ...editor.questions,
-                        {
-                          id: crypto.randomUUID(),
-                          label: '',
-                          type: 'text',
-                          required: false
-                        }
-                      ])
-                    }
-                  >
-                    เพิ่มคำถาม
-                  </button>
+                    <button
+                      type="button"
+                      disabled={editor.questions.length >= 50}
+                      onClick={addQuestion}>
+                      เพิ่มคำถาม
+                    </button>
 
                   <button className="primary" type="submit">
                     บันทึกฟอร์ม
@@ -869,13 +917,19 @@ export default function FormsManager({api}) {
                 <p>/forms/{form.slug}</p>
 
                 <div className="fm-toolbar">
-                  <button onClick={() => open(form)}>
+                    <button onClick={() => open(form)}>
                     แก้ไขฟอร์ม
-                  </button>
+                    </button>
 
-                  <button onClick={() => loadResponses(form)}>
+                    <button onClick={() => loadResponses(form)}>
                     ดูคำตอบ
-                  </button>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removeForm(form)}>
+                      ลบฟอร์ม
+                    </button>
 
                   <button
                     onClick={() =>
@@ -884,7 +938,7 @@ export default function FormsManager({api}) {
                           location.origin + '/forms/' + form.slug
                         );
 
-                        setMessage('คัดลอกลิงก์แล้ว');
+                        notify('คัดลอกลิงก์สำเร็จ');
                       })
                     }
                   >
