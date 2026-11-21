@@ -1,8 +1,9 @@
-import {initializeApp, getApps, cert} from 'firebase-admin/app';
-import {getFirestore, FieldValue} from 'firebase-admin/firestore';
-import {getAuth} from 'firebase-admin/auth';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { createHash } from 'node:crypto';
-import {hashCode, checkCode, fingerprint, validate} from '../lib/core.js';
+import { hashCode, checkCode, fingerprint, validate } from '../lib/core.js';
+import { stampProjects } from '../lib/project-dates.js';
 
 function database() {
   if (!getApps().length) {
@@ -26,7 +27,7 @@ export default async function handler(req, res) {
     .replace(/^\/api\/?/, '')
     .replace(/\/+$/, '');
   const fail = (status, message) =>
-    res.status(status).json({error: message});
+    res.status(status).json({ error: message });
 
   try {
     if (
@@ -62,7 +63,7 @@ export default async function handler(req, res) {
       if (!token) {
         throw Object.assign(
           Error('กรุณาเข้าสู่ระบบผู้ดูแล'),
-          {status: 401}
+          { status: 401 }
         );
       }
 
@@ -71,7 +72,7 @@ export default async function handler(req, res) {
       if (user.uid !== process.env.ADMIN_UID) {
         throw Object.assign(
           Error('บัญชีนี้ไม่มีสิทธิ์ผู้ดูแล'),
-          {status: 403}
+          { status: 403 }
         );
       }
 
@@ -164,7 +165,7 @@ export default async function handler(req, res) {
         return fail(401, 'รหัสลับไม่ถูกต้อง');
       }
 
-      return res.json({ok: true});
+      return res.json({ ok: true });
     }
 
     if (path === 'admin' && req.method === 'GET') {
@@ -181,7 +182,7 @@ export default async function handler(req, res) {
         ...site.data(),
         stats: {
           ...metrics.data(),
-          recent: visitors.docs.map(doc => ({id: doc.id, ...doc.data()})),
+          recent: visitors.docs.map(doc => ({ id: doc.id, ...doc.data() })),
           projects: Object.fromEntries(
             projects.docs.map(doc => [doc.id, doc.data()])
           )
@@ -200,26 +201,33 @@ export default async function handler(req, res) {
 
       await db.runTransaction(async transaction => {
         const snapshot = await transaction.get(privateRef);
+        const currentSite = await transaction.get(publicRef);
 
         if (!snapshot.exists && !body.code) {
           throw Object.assign(
             Error('ครั้งแรกต้องตั้งรหัสลับที่เมนูคีย์ลัดและรหัสลับ'),
-            {status: 400}
+            { status: 400 }
           );
         }
 
         transaction.set(publicRef, {
-          content: body.content,
+          content: {
+            ...body.content,
+            projects: stampProjects(
+              body.content.projects,
+              currentSite.data()?.content?.projects || []
+            )
+          },
           shortcut: body.shortcut,
           updatedAt: Date.now()
         });
 
         if (body.code) {
-          transaction.set(privateRef, {hash: hashCode(body.code)});
+          transaction.set(privateRef, { hash: hashCode(body.code) });
         }
       });
 
-      return res.json({ok: true});
+      return res.json({ ok: true });
     }
 
     if (path === 'event' && req.method === 'POST') {
@@ -231,15 +239,29 @@ export default async function handler(req, res) {
         return fail(400, 'เหตุการณ์ไม่ถูกต้อง');
       }
 
+      if (
+        body.kind === 'visit' &&
+        (
+          typeof body.visitId !== 'string' ||
+          !/^[a-zA-Z0-9-]{16,80}$/.test(body.visitId)
+        )
+      ) {
+        return fail(400, 'รอบการเข้าชมไม่ถูกต้อง');
+      }
+
       if (!(await limit('event', 90, 60000))) {
         return fail(429, 'ส่งข้อมูลบ่อยเกินไป');
       }
 
       if (body.kind !== 'visit') {
         const site = await publicRef.get();
+
         const exists = site.data()?.content?.projects?.some(
-          project => project.id === body.project && project.visible
+          project =>
+            project.id === body.project &&
+            project.visible
         );
+
         if (!exists) return fail(400, 'ไม่พบผลงาน');
       }
 
@@ -251,46 +273,95 @@ export default async function handler(req, res) {
       await db.runTransaction(async transaction => {
         const visitorRef = db.doc('visitors/' + visitor);
         const visitorSnapshot = await transaction.get(visitorRef);
+
+        let sessionRef;
+
+        if (body.kind === 'visit') {
+          sessionRef = visitorRef
+            .collection('visits')
+            .doc(body.visitId);
+
+          const session = await transaction.get(sessionRef);
+
+          // รอบนี้เคยนับแล้ว ไม่เพิ่มสถิติซ้ำ
+          if (session.exists) return;
+        }
+
         let projectVisitorSnapshot;
         let projectVisitorRef;
 
         if (body.kind !== 'visit') {
           projectVisitorRef = db.doc(
-            'projectStats/' + body.project + '/visitors/' + visitor
+            'projectStats/' +
+            body.project +
+            '/visitors/' +
+            visitor
           );
-          projectVisitorSnapshot = await transaction.get(projectVisitorRef);
+
+          projectVisitorSnapshot =
+            await transaction.get(projectVisitorRef);
         }
 
         transaction.set(visitorRef, {
-          visits: FieldValue.increment(body.kind === 'visit' ? 1 : 0),
-          lastSeen: Date.now()
-        }, {merge: true});
+          visits: FieldValue.increment(
+            body.kind === 'visit' ? 1 : 0
+          ),
+          lastSeen: Date.now(),
+          ...(body.kind === 'visit'
+            ? { hasVisited: true }
+            : {})
+        }, { merge: true });
 
         const increments = {};
 
         if (body.kind === 'visit') {
+          transaction.set(sessionRef, {
+            startedAt: Date.now()
+          });
+
           increments.visits = FieldValue.increment(1);
-          if (!visitorSnapshot.exists) {
+
+          const previousVisitor = visitorSnapshot.data();
+
+          // รองรับผู้ชมเก่าที่มีข้อมูลอยู่ก่อนอัปเดตด้วย
+          if (
+            !previousVisitor?.hasVisited &&
+            !(previousVisitor?.visits > 0)
+          ) {
             increments.visitors = FieldValue.increment(1);
           }
         } else {
-          const key = body.kind === 'detail' ? 'details' : 'opens';
+          // การอ่านรายละเอียดและเปิดโปรเจกต์นับแบบเดิม
+          const key = body.kind === 'detail'
+            ? 'details'
+            : 'opens';
+
           increments[key] = FieldValue.increment(1);
 
-          transaction.set(db.doc('projectStats/' + body.project), {
-            [key]: FieldValue.increment(1),
-            ...(!projectVisitorSnapshot.exists
-              ? {visitors: FieldValue.increment(1)}
-              : {})
-          }, {merge: true});
+          transaction.set(
+            db.doc('projectStats/' + body.project),
+            {
+              [key]: FieldValue.increment(1),
+              ...(!projectVisitorSnapshot.exists
+                ? { visitors: FieldValue.increment(1) }
+                : {})
+            },
+            { merge: true }
+          );
 
-          transaction.set(projectVisitorRef, {lastSeen: Date.now()});
+          transaction.set(projectVisitorRef, {
+            lastSeen: Date.now()
+          });
         }
 
-        transaction.set(db.doc('stats/total'), increments, {merge: true});
+        transaction.set(
+          db.doc('stats/total'),
+          increments,
+          { merge: true }
+        );
       });
 
-      return res.json({ok: true});
+      return res.json({ ok: true });
     }
 
     return fail(404, 'ไม่พบ API');
